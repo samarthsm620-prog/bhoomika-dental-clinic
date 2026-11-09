@@ -1,0 +1,8 @@
+{
+  "name": "bhoomika-dental-clinic",
+  "private": true,
+  "version": "1.0.0",
+  "scripts": {
+    "check": "node --check app.js && node --check functions/api/gemini.js"
+  }
+}

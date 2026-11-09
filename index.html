@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Bhoomika Dental Clinic in Badami — thoughtful dental care with clear next steps.">
+  <meta name="theme-color" content="#112b55">
+  <link rel="icon" href="/logo.svg" type="image/svg+xml">
+  <title>Bhoomika Dental Clinic | Perfecting Smiles in Badami</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="styles.css">
+  <script defer src="app.js"></script>
+</head>
+<body>
+  <a class="skip-link" href="#main">Skip to main content</a>
+  <div class="utility-bar">
+    <div class="shell utility-inner">
+      <p class="eyebrow">Bhoomika Dental Clinic · Badami</p>
+      <div class="utility-links">
+        <a href="tel:+919481731482" aria-label="Call emergency number plus 91 9481731482">Emergency <span>+91 9481731482</span></a>
+        <span class="utility-separator" aria-hidden="true"></span>
+        <button class="text-button" type="button" data-scroll="#hours">Clinic timings</button>
+        <span class="utility-separator" aria-hidden="true"></span>
+        <button class="language-toggle" type="button" aria-label="Switch language" aria-pressed="false"><span class="lang-kannada">ಕನ್ನಡ</span><span aria-hidden="true"> / </span><span>English</span></button>
+      </div>
+    </div>
+  </div>
+
+  <header class="site-header">
+    <div class="shell nav-wrap">
+      <a class="brand" href="#top" aria-label="Bhoomika Dental Clinic home">
+        <span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 40 40"><path d="M20 4c-7 0-12 4-12 11 0 7 2 18 7 18 3 0 2-9 5-9s2 9 5 9c5 0 7-11 7-18C32 8 27 4 20 4Z"/><path d="M12 13c3-3 13-3 16 0"/></svg></span>
+        <span><strong>Bhoomika</strong><small>Dental Clinic</small></span>
+      </a>
+      <button class="menu-toggle" type="button" aria-expanded="false" aria-controls="site-nav"><span></span><span></span><span></span><span class="sr-only">Menu</span></button>
+      <nav id="site-nav" class="site-nav" aria-label="Primary navigation">
+        <a href="#care">Our care</a>
+        <a href="#doctor">Meet Dr. Lata</a>
+        <a href="#location">Visit us</a>
+        <button class="button button-small" type="button" data-open-booking>Book appointment <span aria-hidden="true">↗</span></button>
+      </nav>
+    </div>
+  </header>
+
+  <main id="main">
+    <section id="top" class="hero shell" aria-labelledby="hero-title">
+      <div class="hero-copy">
+        <div class="kicker"><span class="pulse-dot" aria-hidden="true"></span><span data-i18n="kicker">Compassionate dental care, close to home</span></div>
+        <h1 id="hero-title"><span data-i18n="heroTitle">Touching lives,</span><br><em data-i18n="heroAccent">perfecting smiles.</em></h1>
+        <p class="hero-lede" data-i18n="heroLead">A calm, clear dental experience for every age — from your first check-up to the confidence of a healthier smile.</p>
+        <div class="hero-actions">
+          <button class="button" type="button" data-open-booking>Find your next step <span aria-hidden="true">↗</span></button>
+          <a class="quiet-link" href="#care">Explore our care <span aria-hidden="true">↓</span></a>
+        </div>
+        <div class="trust-strip" aria-label="Clinic trust signals">
+          <div><strong>10+</strong><span>years of care</span></div><div class="trust-rule" aria-hidden="true"></div><div><strong>4.9<span class="star">★</span></strong><span>patient rating</span></div><div class="trust-rule" aria-hidden="true"></div><div><strong>8</strong><span>care specialties</span></div>
+        </div>
+      </div>
+      <div class="hero-card-wrap">
+        <div class="hero-orbit" aria-hidden="true"><span></span><span></span><span></span></div>
+        <div class="booking-card" id="booking-panel" aria-labelledby="booking-title">
+          <div class="card-topline"><span class="card-index">01</span><span class="card-status"><span class="status-dot" aria-hidden="true"></span>Taking appointments</span></div>
+          <h2 id="booking-title" data-i18n="bookingTitle">Find a dentist.<br><em>Find your next step.</em></h2>
+          <p data-i18n="bookingLead">Tell us what you need and we’ll help you choose the right kind of care.</p>
+          <form id="booking-form" novalidate>
+            <label for="workflow_type">I’m looking for <span class="required">*</span></label>
+            <select id="workflow_type" name="workflow_type" required>
+              <option value="appointment">An appointment</option>
+              <option value="preventive_screening">A preventive screening</option>
+            </select>
+            <div class="form-grid">
+              <div><label for="patient_name">Your name <span class="required">*</span></label><input id="patient_name" name="patient_name" autocomplete="name" required></div>
+              <div><label for="patient_phone">Phone <span class="required">*</span></label><input id="patient_phone" name="patient_phone" type="tel" autocomplete="tel" inputmode="tel" required></div>
+            </div>
+            <label for="specialty">What can we help with? <span class="required">*</span></label>
+            <select id="specialty" name="specialty" required>
+              <option value="">Select a care area</option><option>Dental X-Ray</option><option>Implants, Dentures, Crowns & Bridges</option><option>Orthodontic Braces Treatment</option><option>Teeth Scaling & Bleaching</option><option>Smile Design & Veneering</option><option>Dental Filling</option><option>Root Canal Treatment (RCT)</option><option>Extraction & Impaction Surgery</option>
+            </select>
+            <div class="form-grid"><div><label for="preferred_date">Preferred date</label><input id="preferred_date" name="preferred_date" type="date"></div><div><label for="preferred_time">Preferred time</label><input id="preferred_time" name="preferred_time" type="time"></div></div>
+            <label for="dental_concern">Tell us a little more</label><textarea id="dental_concern" name="dental_concern" rows="2" placeholder="Pain, sensitivity, a check-up..."></textarea>
+            <button class="button button-full" type="submit">Request my appointment <span aria-hidden="true">↗</span></button>
+            <div id="booking-status" class="form-status" role="status" aria-live="polite"></div>
+          </form>
+        </div>
+      </div>
+    </section>
+
+    <section class="marquee" aria-label="Clinic care statement"><div class="marquee-track"><span>Small steps. Stronger smiles.</span><span aria-hidden="true">✳</span><span>ಚಿಕ್ಕ ಹೆಜ್ಜೆಗಳು. ಬಲವಾದ ನಗು.</span><span aria-hidden="true">✳</span><span>Small steps. Stronger smiles.</span></div></section>
+
+    <section id="care" class="section shell" aria-labelledby="care-title">
+      <div class="section-heading"><div><p class="section-label">02 / Our care</p><h2 id="care-title">Clear care for<br><em>real life.</em></h2></div><p class="section-intro">From prevention to precision treatment, your plan starts with listening. Search a concern below or choose a specialty to learn more.</p></div>
+      <div class="specialty-search"><label for="specialty-search">Search a dental concern</label><div class="search-input-wrap"><span aria-hidden="true">⌕</span><input id="specialty-search" type="search" placeholder="Try “toothache”, “braces”, or “missing tooth”"><button type="button" id="search-clear" aria-label="Clear search">×</button></div><div id="search-result" class="search-result" role="status" aria-live="polite"></div></div>
+      <div class="specialty-grid">
+        <article class="specialty-card tone-mint"><span class="card-number">01</span><span class="line-icon" aria-hidden="true">◌</span><h3>Dental X-Ray</h3><p>See the full picture before we plan the next step.</p><span class="card-arrow" aria-hidden="true">↗</span></article>
+        <article class="specialty-card tone-blue"><span class="card-number">02</span><span class="line-icon" aria-hidden="true">◇</span><h3>Implants & restorations</h3><p>Implants, dentures, crowns and bridges made personal.</p><span class="card-arrow" aria-hidden="true">↗</span></article>
+        <article class="specialty-card tone-sand"><span class="card-number">03</span><span class="line-icon" aria-hidden="true">≋</span><h3>Braces treatment</h3><p>Thoughtful orthodontic care for confident alignment.</p><span class="card-arrow" aria-hidden="true">↗</span></article>
+        <article class="specialty-card tone-coral"><span class="card-number">04</span><span class="line-icon" aria-hidden="true">✧</span><h3>Scaling & bleaching</h3><p>A cleaner, brighter smile with gentle preventive care.</p><span class="card-arrow" aria-hidden="true">↗</span></article>
+        <article class="specialty-card tone-blue"><span class="card-number">05</span><span class="line-icon" aria-hidden="true">⌁</span><h3>Smile design</h3><p>Veneering and smile planning that still feels like you.</p><span class="card-arrow" aria-hidden="true">↗</span></article>
+        <article class="specialty-card tone-mint"><span class="card-number">06</span><span class="line-icon" aria-hidden="true">+</span><h3>Dental filling</h3><p>Comfort-first treatment for cavities and sensitivity.</p><span class="card-arrow" aria-hidden="true">↗</span></article>
+        <article class="specialty-card tone-sand"><span class="card-number">07</span><span class="line-icon" aria-hidden="true">⌇</span><h3>Root canal treatment</h3><p>Precise endodontic care to protect your natural tooth.</p><span class="card-arrow" aria-hidden="true">↗</span></article>
+        <article class="specialty-card tone-coral"><span class="card-number">08</span><span class="line-icon" aria-hidden="true">⊹</span><h3>Extraction surgery</h3><p>Clear guidance for impaction, wisdom teeth and recovery.</p><span class="card-arrow" aria-hidden="true">↗</span></article>
+      </div>
+    </section>
+
+    <section id="doctor" class="doctor-section"><div class="shell doctor-layout"><div class="doctor-portrait" aria-label="Illustrated profile of Dr. Lata H. Teredal"><div class="portrait-ring"></div><div class="portrait-monogram">LT</div><span class="portrait-caption">BDS · Clinical care</span></div><div class="doctor-copy"><p class="section-label">03 / Your clinician</p><h2>Meet Dr. Lata.<br><em>Feel looked after.</em></h2><p>Dr. Lata H. Teredal brings thoughtful, practical dental care to every consultation. The goal is simple: understand what is happening, explain it clearly, and help you move forward with confidence.</p><div class="credential-row"><div><strong>BDS</strong><span>Qualified dental surgeon</span></div><div><strong>4.9/5</strong><span>Verified patient rating</span></div><div><strong>Badami</strong><span>Care rooted locally</span></div></div><div class="doctor-actions"><button class="button" type="button" data-open-booking>Book an in-clinic visit <span aria-hidden="true">↗</span></button><a class="quiet-link" href="tel:+919481731482">Call the clinic <span aria-hidden="true">↗</span></a></div></div></div></section>
+
+    <section id="hours" class="hours-section shell" aria-labelledby="hours-title"><div class="hours-card"><div><p class="section-label">04 / Find us</p><h2 id="hours-title">A calm visit<br><em>starts here.</em></h2><p class="address">TMC Complex, Badami<br>Karnataka, India</p><a class="quiet-link" href="https://maps.google.com/?q=TMC+Complex+Badami" target="_blank" rel="noreferrer">Open in Maps <span aria-hidden="true">↗</span></a></div><div class="hours-table"><div><span>Monday – Saturday</span><strong>10:30 AM – 2:30 PM</strong></div><div><span>Evening clinic</span><strong>5:00 PM – 7:30 PM</strong></div><div class="free-slot"><span>Monday free consultation</span><strong>10:30 AM – 2:00 PM <b>₹0</b></strong></div></div></div></section>
+  </main>
+
+  <aside class="callback-row" aria-label="Request a callback"><div class="shell callback-inner"><div class="callback-copy"><span class="callback-icon" aria-hidden="true">↗</span><div><strong>Need a little guidance?</strong><span>Leave your number and we’ll call you back.</span></div></div><form id="callback-form"><label class="sr-only" for="callback-name">Your name</label><input id="callback-name" name="name" placeholder="Your name" autocomplete="name" required><label class="sr-only" for="callback-phone">Phone number</label><input id="callback-phone" name="phone" type="tel" placeholder="Phone number" autocomplete="tel" required><label class="sr-only" for="callback-concern">Concern</label><input id="callback-concern" name="concern" placeholder="What can we help with?" required><button class="button button-dark" type="submit">Call me back <span aria-hidden="true">↗</span></button></form><div id="callback-status" class="form-status" role="status" aria-live="polite"></div></div></aside>
+
+  <button class="voice-fab" id="voice-toggle" type="button" aria-expanded="false" aria-controls="voice-panel"><span class="voice-pulse" aria-hidden="true"></span><span class="voice-label">Talk to Bhoomika</span><span class="mic" aria-hidden="true">◉</span></button>
+  <section class="voice-panel" id="voice-panel" aria-labelledby="voice-title" hidden><div class="voice-panel-head"><div><p class="section-label">Voice assistant</p><h2 id="voice-title">Tell us what you need.</h2></div><button class="icon-button" id="voice-close" type="button" aria-label="Close voice assistant">×</button></div><p>Ask about clinic hours, care areas, or say “I need an appointment for a toothache.”</p><div id="voice-transcript" class="voice-transcript" role="status" aria-live="polite">Press the microphone to begin.</div><div class="voice-actions"><button class="button" id="voice-listen" type="button"><span aria-hidden="true">◉</span> Start listening</button><button class="quiet-link" id="voice-speak" type="button">Read last answer aloud</button></div><div id="voice-answer" class="voice-answer" role="status" aria-live="polite"></div></section>
+
+<footer class="site-footer"><div class="shell footer-grid"><div><a class="brand footer-brand" href="#top"><span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 40 40"><path d="M20 4c-7 0-12 4-12 11 0 7 2 18 7 18 3 0 2-9 5-9s2 9 5 9c5 0 7-11 7-18C32 8 27 4 20 4Z"/><path d="M12 13c3-3 13-3 16 0"/></svg></span><span><strong>Bhoomika</strong><small>Dental Clinic</small></span></a><p>Small steps. Stronger smiles.</p></div><div><p class="footer-label">Contact</p><a href="tel:+919481731482">+91 9481731482</a><a href="#hours">TMC Complex, Badami</a></div><div><p class="footer-label">Explore</p><a href="#care">Our care</a><a href="#doctor">Meet Dr. Lata</a><a href="#hours">Clinic timings</a></div></div><div class="shell footer-bottom"><span>© 2026 Bhoomika Dental Clinic</span><span>Accessible care, in every sense.</span></div></footer>
+</body>
+</html>
