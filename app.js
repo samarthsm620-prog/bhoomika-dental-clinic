@@ -42,6 +42,23 @@ function initNavigation() {
   }));
 }
 
+function selectSpecialty(value) {
+  const select = $('#specialty');
+  if (!select) return;
+  const option = [...select.options].find((candidate) => candidate.value.toLowerCase() === value.toLowerCase() || candidate.text.toLowerCase().includes(value.toLowerCase()));
+  if (option) select.value = option.value;
+  $$('.specialty-card').forEach((card) => card.classList.toggle('is-selected', card.dataset.specialty === value));
+  $('#booking-panel')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  setTimeout(() => $('#patient_name')?.focus(), 450);
+  setStatus($('#booking-status'), `${value} selected — tell us your name and phone number to request a visit.`);
+}
+
+function initSpecialtyCards() {
+  $$('.specialty-card[data-specialty]').forEach((card) => {
+    card.addEventListener('click', () => selectSpecialty(card.dataset.specialty));
+  });
+}
+
 function initLanguage() {
   const button = $('.language-toggle');
   button?.addEventListener('click', () => {
@@ -101,7 +118,10 @@ function initSearch() {
     const query = input.value.trim().toLowerCase();
     if (!query) { result.textContent = ''; return; }
     const match = Object.entries(knowledge?.specialties || {}).find(([term]) => query.includes(term) || term.includes(query));
-    result.textContent = match ? `We can help with ${match[1]}. Select it in the booking form to request a visit.` : 'Try “toothache”, “braces”, “missing tooth”, or “cleaning”.';
+    if (match) {
+      result.innerHTML = `We can help with <strong>${match[1]}</strong>. <button type="button" class="search-action" data-search-specialty="${match[1]}">Select it in the booking form ↗</button>`;
+      $('.search-action', result)?.addEventListener('click', () => selectSpecialty(match[1]));
+    } else result.textContent = 'Try “toothache”, “braces”, “missing tooth”, or “cleaning”.';
   });
 }
 
@@ -166,5 +186,5 @@ function initVoice() {
   listen?.addEventListener('click', () => { recognition.lang = currentLanguage === 'kn' ? 'kn-IN' : 'en-IN'; recognition.start(); });
 }
 
-async function boot() { initNavigation(); initLanguage(); initBooking(); initCallback(); await loadKnowledge(); initSearch(); initVoice(); }
+async function boot() { initNavigation(); initLanguage(); initBooking(); initCallback(); initSpecialtyCards(); await loadKnowledge(); initSearch(); initVoice(); }
 boot();
