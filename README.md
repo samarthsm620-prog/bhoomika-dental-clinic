@@ -27,6 +27,8 @@ The browser calls `/api/gemini` when the endpoint is available. On Cloudflare Pa
 
 Use this repository as a Pages project with the project root as the build directory. The site is static; the Pages Function in `functions/` is deployed automatically. No build command is required.
 
+The repository also includes `Dockerfile` and `server.mjs` for the managed hybrid deployment used by the project preview. The container exposes `/_app/health` and keeps `GEMINI_API_KEY` server-side.
+
 ## Privacy
 
 Do not commit patient records, API keys, or production secrets. The client validates required fields but production systems should also apply server-side validation, retention, consent, and access controls.
