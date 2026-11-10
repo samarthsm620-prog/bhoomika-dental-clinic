@@ -6,7 +6,7 @@ import { fileURLToPath } from 'node:url';
 const root = resolve(fileURLToPath(new URL('.', import.meta.url)));
 const port = Number(process.env.PORT || 3000);
 const clinicContext = `You are the Bhoomika Dental Clinic voice assistant. Clinic: Bhoomika Dental Clinic. Doctor: Dr. Lata H. Teredal, BDS. Location: TMC Complex, Badami. Hours: 10:30 AM to 2:30 PM and 5:00 PM to 7:30 PM. Free Monday consultations: 10:30 AM to 2:00 PM. Give general guidance only, never diagnose, and recommend urgent clinic contact for severe pain, facial swelling, uncontrolled bleeding, airway difficulty, or a knocked-out tooth.`;
-const types = { '.html': 'text/html; charset=utf-8', '.css': 'text/css; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.json': 'application/json; charset=utf-8', '.svg': 'image/svg+xml' };
+const types = { '.html': 'text/html; charset=utf-8', '.css': 'text/css; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.json': 'application/json; charset=utf-8', '.svg': 'image/svg+xml', '.jpg': 'image/jpeg' };
 
 async function readJson(request) {
   let body = '';
@@ -21,7 +21,7 @@ async function handleGemini(request, response) {
     const prompt = String(body.prompt || '').slice(0, 4000);
     const language = String(body.language || 'English').slice(0, 32);
     if (!prompt) throw new Error('Prompt required.');
-    const upstream = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${process.env.GEMINI_API_KEY}`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ system_instruction: { parts: [{ text: clinicContext }] }, contents: [{ role: 'user', parts: [{ text: `Respond in ${language}. User says: ${prompt}` }] }], generationConfig: { temperature: 0.3, maxOutputTokens: 240 } }) });
+    const upstream = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${process.env.GEMINI_API_KEY}`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ systemInstruction: { parts: [{ text: clinicContext }] }, contents: [{ role: 'user', parts: [{ text: `Respond in ${language}. User says: ${prompt}` }] }], generationConfig: { temperature: 0.3, maxOutputTokens: 240 } }) });
     const data = await upstream.json();
     if (!upstream.ok) throw new Error('Gemini request failed.');
     const text = data?.candidates?.[0]?.content?.parts?.map((part) => part.text || '').join(' ').trim();
