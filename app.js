@@ -3,13 +3,14 @@ const CALLBACK_WEBHOOK = 'https://api.manus.im/api/webhook/triggers/4d03e54a-29c
 const KNOWLEDGE_URL = 'clinic-knowledge.json';
 
 const translations = {
-  en: { kicker: 'Compassionate dental care, close to home', heroTitle: 'Care that feels close,', heroAccent: 'smiles that move with you.', heroLead: 'A calm, clear dental experience for every age — from your first check-up to the confidence of a healthier smile.', heroCta: 'Find your next step', heroExplore: 'Explore our care', navCare: 'Our care', navDoctor: 'Meet Dr. Lata', navVisit: 'Visit us', navBook: 'Book appointment', bookingTitle: 'Find a dentist.<br><em>Find your next step.</em>', bookingLead: 'Tell us what you need and we’ll help you choose the right kind of care.', careLabel: '02 / Our care', careTitle: 'Clear care for<br><em>real life.</em>', careIntro: 'From prevention to precision treatment, your plan starts with listening. Search a concern below or choose a specialty to learn more.', searchLabel: 'Search a dental concern', searchPlaceholder: 'Try “toothache”, “braces”, or “missing tooth”', galleryLabel: '04 / Inside the clinic', galleryTitle: 'A real place.<br><em>Ready for you.</em>', galleryIntro: 'See the rooms, equipment, entrance and people behind your care. These are photographs from Bhoomika Dental Clinic in Badami.', doctorLabel: '05 / Your clinician', hoursLabel: '06 / Find us' },
-  kn: { kicker: 'ನಿಮ್ಮ ಮನೆಯ ಹತ್ತಿರ ಕಾಳಜಿಯ ದಂತ ಚಿಕಿತ್ಸೆ', heroTitle: 'ನಿಮ್ಮ ಹತ್ತಿರದ ಕಾಳಜಿ,', heroAccent: 'ನಿಮ್ಮ ನಗುವಿನ ಹೊಸ ಹೆಜ್ಜೆ.', heroLead: 'ಪ್ರತಿ ವಯಸ್ಸಿಗೂ ಶಾಂತ ಮತ್ತು ಸ್ಪಷ್ಟ ದಂತ ಆರೈಕೆ — ಮೊದಲ ತಪಾಸಣೆಯಿಂದ ಆರೋಗ್ಯಕರ ನಗುವಿನ ಆತ್ಮವಿಶ್ವಾಸದವರೆಗೆ.', heroCta: 'ಮುಂದಿನ ಹೆಜ್ಜೆ ತಿಳಿಯಿರಿ', heroExplore: 'ನಮ್ಮ ಆರೈಕೆ ನೋಡಿ', navCare: 'ನಮ್ಮ ಆರೈಕೆ', navDoctor: 'ಡಾ. ಲತಾ ಅವರನ್ನು ಭೇಟಿ ಮಾಡಿ', navVisit: 'ನಮ್ಮನ್ನು ಭೇಟಿ ಮಾಡಿ', navBook: 'ಅಪಾಯಿಂಟ್‌ಮೆಂಟ್ ಬುಕ್ ಮಾಡಿ', bookingTitle: 'ದಂತ ವೈದ್ಯರನ್ನು ಹುಡುಕಿ.<br><em>ಮುಂದಿನ ಹೆಜ್ಜೆ ತಿಳಿಯಿರಿ.</em>', bookingLead: 'ನಿಮಗೆ ಬೇಕಾದುದನ್ನು ತಿಳಿಸಿ; ಸರಿಯಾದ ಆರೈಕೆಯನ್ನು ಆಯ್ಕೆ ಮಾಡಲು ನಾವು ಸಹಾಯ ಮಾಡುತ್ತೇವೆ.', careLabel: '02 / ನಮ್ಮ ಆರೈಕೆ', careTitle: 'ಸ್ಪಷ್ಟ ಆರೈಕೆ<br><em>ನಿಜ ಜೀವನಕ್ಕಾಗಿ.</em>', careIntro: 'ತಡೆಗಟ್ಟುವ ಆರೈಕೆಯಿಂದ ನಿಖರ ಚಿಕಿತ್ಸೆಯವರೆಗೆ, ನಿಮ್ಮ ಯೋಜನೆ ಕೇಳುವುದರಿಂದ ಆರಂಭವಾಗುತ್ತದೆ. ಸಮಸ್ಯೆಯನ್ನು ಹುಡುಕಿ ಅಥವಾ ಆರೈಕೆ ಆಯ್ಕೆಮಾಡಿ.', searchLabel: 'ದಂತ ಸಮಸ್ಯೆ ಹುಡುಕಿ', searchPlaceholder: '“ಹಲ್ಲು ನೋವು”, “ಬ್ರೇಸಸ್” ಅಥವಾ “ಹಲ್ಲು ಕಾಣೆಯಾಗಿದೆ” ಎಂದು ಪ್ರಯತ್ನಿಸಿ', galleryLabel: '04 / ಕ್ಲಿನಿಕ್ ಒಳಗೆ', galleryTitle: 'ನಿಜವಾದ ಸ್ಥಳ.<br><em>ನಿಮಗಾಗಿ ಸಿದ್ಧ.</em>', galleryIntro: 'ನಿಮ್ಮ ಆರೈಕೆಯ ಹಿಂದೆ ಇರುವ ಕೊಠಡಿಗಳು, ಉಪಕರಣಗಳು ಮತ್ತು ಜನರನ್ನು ನೋಡಿ. ಇವು ಬಾದಾಮಿಯ ಭೂಮಿಕಾ ದಂತ ಚಿಕಿತ್ಸಾಲಯದ ಚಿತ್ರಗಳು.', doctorLabel: '05 / ನಿಮ್ಮ ವೈದ್ಯರು', hoursLabel: '06 / ನಮ್ಮನ್ನು ಭೇಟಿ ಮಾಡಿ' }
+  en: { kicker: 'Compassionate dental care, close to home', heroTitle: 'Care that feels close,', heroAccent: 'smiles that move with you.', heroLead: 'A calm, clear dental experience for every age — from your first check-up to the confidence of a healthier smile.', heroCta: 'Find your next step', heroExplore: 'Explore our care', navCare: 'Our care', navDoctor: 'Meet Dr. Lata', navVisit: 'Visit us', navBook: 'Book appointment', bookingTitle: 'Find a dentist.<br><em>Find your next step.</em>', bookingLead: 'Tell us what you need and we’ll help you choose the right kind of care.', careLabel: '02 / Our care', careTitle: 'Clear care for<br><em>real life.</em>', careIntro: 'From prevention to precision treatment, your plan starts with listening. Search a concern below or choose a specialty to learn more.', searchLabel: 'Search a dental concern', searchPlaceholder: 'Try “toothache”, “braces”, or “missing tooth”', galleryLabel: '05 / Inside the clinic', galleryTitle: 'A real place.<br><em>Ready for you.</em>', galleryIntro: 'See the rooms, equipment, entrance and people behind your care. These are photographs from Bhoomika Dental Clinic in Badami.', doctorLabel: '06 / Your clinician', hoursLabel: '07 / Find us', conditionsLabel: '04 / Understand your mouth', conditionsTitle: 'Oral health,<br><em>from A to Z.</em>', conditionsIntro: 'A calm starting point for common symptoms, conditions and care questions. Browse a letter or search a topic — this is education, not a diagnosis.', conditionsCta: 'Talk to the clinic <span aria-hidden="true">↗</span>', conditionsSearch: 'Search Aphthous ulcer, gum bleeding, dry mouth…' },
+  kn: { kicker: 'ನಿಮ್ಮ ಮನೆಯ ಹತ್ತಿರ ಕಾಳಜಿಯ ದಂತ ಚಿಕಿತ್ಸೆ', heroTitle: 'ನಿಮ್ಮ ಹತ್ತಿರದ ಕಾಳಜಿ,', heroAccent: 'ನಿಮ್ಮ ನಗುವಿನ ಹೊಸ ಹೆಜ್ಜೆ.', heroLead: 'ಪ್ರತಿ ವಯಸ್ಸಿಗೂ ಶಾಂತ ಮತ್ತು ಸ್ಪಷ್ಟ ದಂತ ಆರೈಕೆ — ಮೊದಲ ತಪಾಸಣೆಯಿಂದ ಆರೋಗ್ಯಕರ ನಗುವಿನ ಆತ್ಮವಿಶ್ವಾಸದವರೆಗೆ.', heroCta: 'ಮುಂದಿನ ಹೆಜ್ಜೆ ತಿಳಿಯಿರಿ', heroExplore: 'ನಮ್ಮ ಆರೈಕೆ ನೋಡಿ', navCare: 'ನಮ್ಮ ಆರೈಕೆ', navDoctor: 'ಡಾ. ಲತಾ ಅವರನ್ನು ಭೇಟಿ ಮಾಡಿ', navVisit: 'ನಮ್ಮನ್ನು ಭೇಟಿ ಮಾಡಿ', navBook: 'ಅಪಾಯಿಂಟ್‌ಮೆಂಟ್ ಬುಕ್ ಮಾಡಿ', bookingTitle: 'ದಂತ ವೈದ್ಯರನ್ನು ಹುಡುಕಿ.<br><em>ಮುಂದಿನ ಹೆಜ್ಜೆ ತಿಳಿಯಿರಿ.</em>', bookingLead: 'ನಿಮಗೆ ಬೇಕಾದುದನ್ನು ತಿಳಿಸಿ; ಸರಿಯಾದ ಆರೈಕೆಯನ್ನು ಆಯ್ಕೆ ಮಾಡಲು ನಾವು ಸಹಾಯ ಮಾಡುತ್ತೇವೆ.', careLabel: '02 / ನಮ್ಮ ಆರೈಕೆ', careTitle: 'ಸ್ಪಷ್ಟ ಆರೈಕೆ<br><em>ನಿಜ ಜೀವನಕ್ಕಾಗಿ.</em>', careIntro: 'ತಡೆಗಟ್ಟುವ ಆರೈಕೆಯಿಂದ ನಿಖರ ಚಿಕಿತ್ಸೆಯವರೆಗೆ, ನಿಮ್ಮ ಯೋಜನೆ ಕೇಳುವುದರಿಂದ ಆರಂಭವಾಗುತ್ತದೆ. ಸಮಸ್ಯೆಯನ್ನು ಹುಡುಕಿ ಅಥವಾ ಆರೈಕೆ ಆಯ್ಕೆಮಾಡಿ.', searchLabel: 'ದಂತ ಸಮಸ್ಯೆ ಹುಡುಕಿ', searchPlaceholder: '“ಹಲ್ಲು ನೋವು”, “ಬ್ರೇಸಸ್” ಅಥವಾ “ಹಲ್ಲು ಕಾಣೆಯಾಗಿದೆ” ಎಂದು ಪ್ರಯತ್ನಿಸಿ', galleryLabel: '05 / ಕ್ಲಿನಿಕ್ ಒಳಗೆ', galleryTitle: 'ನಿಜವಾದ ಸ್ಥಳ.<br><em>ನಿಮಗಾಗಿ ಸಿದ್ಧ.</em>', galleryIntro: 'ನಿಮ್ಮ ಆರೈಕೆಯ ಹಿಂದೆ ಇರುವ ಕೊಠಡಿಗಳು, ಉಪಕರಣಗಳು ಮತ್ತು ಜನರನ್ನು ನೋಡಿ. ಇವು ಬಾದಾಮಿಯ ಭೂಮಿಕಾ ದಂತ ಚಿಕಿತ್ಸಾಲಯದ ಚಿತ್ರಗಳು.', doctorLabel: '06 / ನಿಮ್ಮ ವೈದ್ಯರು', hoursLabel: '07 / ನಮ್ಮನ್ನು ಭೇಟಿ ಮಾಡಿ', conditionsLabel: '04 / ನಿಮ್ಮ ಬಾಯಿಯ ಆರೋಗ್ಯ ತಿಳಿಯಿರಿ', conditionsTitle: 'ಬಾಯಿಯ ಆರೋಗ್ಯ,<br><em>A ರಿಂದ Z ವರೆಗೆ.</em>', conditionsIntro: 'ಸಾಮಾನ್ಯ ಲಕ್ಷಣಗಳು, ಪರಿಸ್ಥಿತಿಗಳು ಮತ್ತು ಆರೈಕೆ ಪ್ರಶ್ನೆಗಳಿಗೆ ಶಾಂತ ಆರಂಭ. ಅಕ್ಷರದ ಮೂಲಕ ನೋಡಿ ಅಥವಾ ಹುಡುಕಿ — ಇದು ಶಿಕ್ಷಣಕ್ಕಾಗಿ, ರೋಗನಿರ್ಣಯವಲ್ಲ.', conditionsCta: 'ಕ್ಲಿನಿಕ್ ಜೊತೆ ಮಾತನಾಡಿ <span aria-hidden="true">↗</span>', conditionsSearch: 'ಅಫ್ತಸ್ ಹುಣ್ಣು, ಒಸಡು ರಕ್ತಸ್ರಾವ, ಬಾಯಿ ಒಣಗುವುದು… ಹುಡುಕಿ' }
 };
 
 let currentLanguage = 'en';
 let knowledge = null;
 let lastAnswer = '';
+let disorders = [];
 
 const $ = (selector, root = document) => root.querySelector(selector);
 const $$ = (selector, root = document) => [...root.querySelectorAll(selector)];
@@ -120,6 +121,8 @@ function initLanguage() {
   const apply = () => {
     $$('[data-i18n]').forEach((node) => { const value = translations[currentLanguage][node.dataset.i18n]; if (value) node.innerHTML = value; });
     $$('[data-i18n-placeholder]').forEach((node) => { const value = translations[currentLanguage][node.dataset.i18nPlaceholder]; if (value) node.setAttribute('placeholder', value); });
+    const allTab = $('#condition-letters .condition-letter');
+    if (allTab) allTab.textContent = currentLanguage === 'kn' ? 'ಎಲ್ಲಾ' : 'All';
   };
   button?.addEventListener('click', () => {
     currentLanguage = currentLanguage === 'en' ? 'kn' : 'en';
@@ -224,6 +227,27 @@ function initSearch() {
   });
 }
 
+function initConditions() {
+  const grid = $('#condition-grid');
+  const letters = $('#condition-letters');
+  const input = $('#condition-search');
+  if (!grid || !letters || !disorders.length) return;
+  let activeLetter = '';
+  const renderCards = () => {
+    const query = input.value.trim().toLowerCase();
+    const visible = disorders.filter((item) => (!activeLetter || item.letter === activeLetter) && (!query || `${item.name} ${item.summary} ${item.type}`.toLowerCase().includes(query)));
+    grid.innerHTML = visible.length ? visible.map((item) => `<article class="condition-card"><div class="condition-card-top"><span class="condition-letter-mark">${item.letter}</span><span class="condition-type">${item.type}</span></div><h3>${item.name}</h3><p>${item.summary}</p><p class="condition-care"><strong>When to ask for care:</strong> ${item.care}</p><a class="condition-source" href="${item.url}" ${item.url.startsWith('http') ? 'target="_blank" rel="noreferrer"' : ''}>Source: ${item.source} ↗</a></article>`).join('') : '<p class="condition-empty">No topic matches that search. Try a symptom, condition or care question.</p>';
+  };
+  letters.innerHTML = `<button class="condition-letter is-active" type="button" data-letter="" role="tab" aria-selected="true">${currentLanguage === 'kn' ? 'ಎಲ್ಲಾ' : 'All'}</button>${disorders.map((item) => `<button class="condition-letter" type="button" data-letter="${item.letter}" role="tab" aria-selected="false">${item.letter}</button>`).join('')}`;
+  $$('.condition-letter', letters).forEach((button) => button.addEventListener('click', () => {
+    activeLetter = button.dataset.letter;
+    input.value = '';
+    $$('.condition-letter', letters).forEach((item) => { const selected = item === button; item.classList.toggle('is-active', selected); item.setAttribute('aria-selected', String(selected)); });
+    renderCards();
+  }));
+  input.addEventListener('input', () => { activeLetter = ''; $$('.condition-letter', letters).forEach((item, index) => { item.classList.toggle('is-active', index === 0); item.setAttribute('aria-selected', String(index === 0)); }); renderCards(); });
+  renderCards();
+}
 function speak(text) {
   if (!('speechSynthesis' in window)) return;
   window.speechSynthesis.cancel();
@@ -305,5 +329,6 @@ function initVoice() {
   listen?.addEventListener('click', () => { recognition.lang = currentLanguage === 'kn' ? 'kn-IN' : 'en-IN'; recognition.start(); });
 }
 
-async function boot() { initNavigation(); initHeroMedia(); initLanguage(); initBooking(); initCallback(); initFeedback(); initSpecialtyCards(); await loadKnowledge(); initSearch(); initVoice(); }
+async function loadDisorders() { try { disorders = await fetch('oral-disorders.json').then((response) => response.json()); } catch { disorders = []; } }
+async function boot() { initNavigation(); initHeroMedia(); initLanguage(); initBooking(); initCallback(); initFeedback(); initSpecialtyCards(); await Promise.all([loadKnowledge(), loadDisorders()]); initSearch(); initConditions(); initVoice(); }
 boot();
