@@ -29,7 +29,10 @@ export async function onRequestPost({ request, env }) {
     })
   });
   const data = await upstream.json();
-  if (!upstream.ok) return Response.json({ error: 'Gemini request failed.' }, { status: 502 });
+  if (!upstream.ok) {
+    const providerMessage = String(data?.error?.message || 'Unknown provider error.').replace(/key=[^\s&]+/gi, 'key=[redacted]').slice(0, 240);
+    return Response.json({ error: 'Gemini request failed.', provider_status: upstream.status, provider_message: providerMessage }, { status: 502 });
+  }
   const text = data?.candidates?.[0]?.content?.parts?.map((part) => part.text || '').join(' ').trim();
   return Response.json({ text: text || 'Please call the clinic so our team can guide you.' });
 }
