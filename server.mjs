@@ -27,7 +27,10 @@ async function handleGemini(request, response) {
     if (!prompt) throw new Error('Prompt required.');
     const upstream = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${process.env.GEMINI_API_KEY}`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ system_instruction: { parts: [{ text: clinicContext }] }, contents: [{ role: 'user', parts: [{ text: `Respond in ${language}. User says: ${prompt}` }] }], generationConfig: { temperature: 0.3, maxOutputTokens: 240 } }) });
     const data = await upstream.json();
-    if (!upstream.ok) throw new Error('Gemini request failed.');
+    if (!upstream.ok) {
+      const providerMessage = String(data?.error?.message || 'Unknown provider error.').replace(/key=[^\s&]+/gi, 'key=[redacted]').slice(0, 240);
+      throw new Error(`Gemini upstream ${upstream.status}: ${providerMessage}`);
+    }
     const text = data?.candidates?.[0]?.content?.parts?.map((part) => part.text || '').join(' ').trim();
     response.writeHead(200, { 'content-type': 'application/json' }); response.end(JSON.stringify({ text: text || 'Please call the clinic so our team can guide you.' }));
   } catch (error) { response.writeHead(400, { 'content-type': 'application/json' }); response.end(JSON.stringify({ error: error.message })); }
