@@ -25,14 +25,9 @@ async function handleGemini(request, response) {
     const prompt = String(body.prompt || '').slice(0, 4000);
     const language = String(body.language || 'English').slice(0, 32);
     if (!prompt) throw new Error('Prompt required.');
-    const upstream = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${process.env.GEMINI_API_KEY}`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ system_instruction: { parts: [{ text: clinicContext }] }, contents: [{ role: 'user', parts: [{ text: `Respond in ${language}. User says: ${prompt}` }] }], generationConfig: { temperature: 0.3, maxOutputTokens: 240 } }) });
+    const upstream = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent?key=${process.env.GEMINI_API_KEY}`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ system_instruction: { parts: [{ text: clinicContext }] }, contents: [{ role: 'user', parts: [{ text: `Respond in ${language}. User says: ${prompt}` }] }], generationConfig: { temperature: 0.3, maxOutputTokens: 240 } }) });
     const data = await upstream.json();
-    if (!upstream.ok) {
-      const providerMessage = String(data?.error?.message || 'Unknown provider error.').replace(/key=[^\s&]+/gi, 'key=[redacted]').slice(0, 240);
-      response.writeHead(502, { 'content-type': 'application/json', 'x-gemini-provider-status': String(upstream.status), 'x-gemini-provider-message': encodeURIComponent(providerMessage) });
-      response.end(JSON.stringify({ error: 'Gemini request failed.' }));
-      return;
-    }
+    if (!upstream.ok) throw new Error('Gemini request failed.');
     const text = data?.candidates?.[0]?.content?.parts?.map((part) => part.text || '').join(' ').trim();
     response.writeHead(200, { 'content-type': 'application/json' }); response.end(JSON.stringify({ text: text || 'Please call the clinic so our team can guide you.' }));
   } catch (error) { response.writeHead(400, { 'content-type': 'application/json' }); response.end(JSON.stringify({ error: error.message })); }
