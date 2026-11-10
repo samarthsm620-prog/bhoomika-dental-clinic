@@ -31,10 +31,40 @@ function collectForm(form) {
 function initNavigation() {
   const toggle = $('.menu-toggle');
   const nav = $('#site-nav');
+  const closeMenu = () => {
+    nav?.classList.remove('open');
+    toggle?.setAttribute('aria-expanded', 'false');
+    toggle?.setAttribute('aria-label', 'Open navigation menu');
+  };
+  const openMenu = () => {
+    nav?.classList.add('open');
+    toggle?.setAttribute('aria-expanded', 'true');
+    toggle?.setAttribute('aria-label', 'Close navigation menu');
+    $('a, button', nav)?.focus();
+  };
   toggle?.addEventListener('click', () => {
-    const open = nav.classList.toggle('open');
-    toggle.setAttribute('aria-expanded', String(open));
+    if (nav?.classList.contains('open')) {
+      closeMenu();
+      toggle.focus();
+    } else {
+      openMenu();
+    }
   });
+  toggle?.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape' && nav?.classList.contains('open')) {
+      closeMenu();
+      toggle.focus();
+    }
+  });
+  nav?.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape' && nav.classList.contains('open')) {
+      closeMenu();
+      toggle?.focus();
+    }
+  });
+  $$('a', nav).forEach((link) => link.addEventListener('click', () => {
+    if (window.matchMedia?.('(max-width: 720px)').matches) closeMenu();
+  }));
   $$('[data-scroll]').forEach((button) => button.addEventListener('click', () => $(button.dataset.scroll)?.scrollIntoView({ behavior: 'smooth' })));
   $$('[data-open-booking]').forEach((button) => button.addEventListener('click', () => {
     $('#booking-panel')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -233,9 +263,23 @@ function initVoice() {
   const question = $('#voice-question');
   const ask = $('#voice-ask');
   let recognition;
-  const open = (isOpen) => { fab.setAttribute('aria-expanded', String(isOpen)); panel.hidden = !isOpen; if (isOpen) listen.focus(); };
+  const open = (isOpen) => {
+    fab.setAttribute('aria-expanded', String(isOpen));
+    panel.hidden = !isOpen;
+    if (isOpen) {
+      listen.focus();
+    } else {
+      fab.focus();
+    }
+  };
   fab?.addEventListener('click', () => open(panel.hidden));
   close?.addEventListener('click', () => open(false));
+  panel?.addEventListener('keydown', (event) => {
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      open(false);
+    }
+  });
   read?.addEventListener('click', () => { if (lastAnswer) speak(lastAnswer); });
   const handlePrompt = async (prompt) => {
     transcript.textContent = `“${prompt}”`;
