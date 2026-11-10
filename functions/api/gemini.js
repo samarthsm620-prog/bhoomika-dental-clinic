@@ -1,4 +1,9 @@
-const clinicContext = `You are the Bhoomika Dental Clinic voice assistant. Clinic: Bhoomika Dental Clinic. Doctor: Dr. Lata H. Teredal, BDS. Location: TMC Complex, Badami. Hours: 10:30 AM to 2:30 PM and 5:00 PM to 7:30 PM. Free Monday consultations: 10:30 AM to 2:00 PM. Give general guidance only, never diagnose, and recommend urgent clinic contact for severe pain, facial swelling, uncontrolled bleeding, airway difficulty, or a knocked-out tooth. Answer in the requested language when possible.`;
+import clinicKnowledge from '../../clinic-knowledge.json' with { type: 'json' };
+
+const clinicContext = `You are the Bhoomika Dental Clinic voice assistant. Use the verified clinic knowledge below as your source of truth. Give general guidance only and never diagnose. For severe pain, facial swelling, uncontrolled bleeding, airway difficulty, or a knocked-out tooth, recommend urgent contact with the clinic. Answer in the requested language when possible, keep responses concise and helpful, and direct appointment requests to the website booking form or clinic phone.
+
+Verified clinic knowledge:
+${JSON.stringify(clinicKnowledge, null, 2)}`;
 
 export async function onRequestPost({ request, env }) {
   if (!env.GEMINI_API_KEY) {
