@@ -29,7 +29,9 @@ async function handleGemini(request, response) {
     const data = await upstream.json();
     if (!upstream.ok) {
       const providerMessage = String(data?.error?.message || 'Unknown provider error.').replace(/key=[^\s&]+/gi, 'key=[redacted]').slice(0, 240);
-      throw new Error(`Gemini upstream ${upstream.status}: ${providerMessage}`);
+      response.writeHead(502, { 'content-type': 'application/json', 'x-gemini-provider-status': String(upstream.status), 'x-gemini-provider-message': encodeURIComponent(providerMessage) });
+      response.end(JSON.stringify({ error: 'Gemini request failed.' }));
+      return;
     }
     const text = data?.candidates?.[0]?.content?.parts?.map((part) => part.text || '').join(' ').trim();
     response.writeHead(200, { 'content-type': 'application/json' }); response.end(JSON.stringify({ text: text || 'Please call the clinic so our team can guide you.' }));
