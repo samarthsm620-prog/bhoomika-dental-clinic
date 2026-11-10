@@ -26,6 +26,21 @@ async function postWebhook(url, payload) {
   return fetch(url, { method: 'POST', mode: 'cors', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload), keepalive: true });
 }
 
+async function submitAppointment(payload) {
+  const response = await fetch('/api/appointment', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+    keepalive: true
+  });
+  if (response.ok) return response.json();
+  if (response.status !== 404 && response.status !== 503) throw new Error('Appointment automation failed.');
+  // Keep the existing live webhook as a safe fallback while clinic credentials are configured.
+  const fallback = await postWebhook(APPOINTMENT_WEBHOOK, payload);
+  if (!fallback.ok) throw new Error('Appointment delivery failed.');
+  return { ok: true, fallback: true };
+}
+
 function collectForm(form) {
   const data = Object.fromEntries(new FormData(form).entries());
   const files = $('#patient_files', form)?.files;
@@ -149,7 +164,7 @@ function initBooking() {
     const isPreventive = payload.workflow_type === 'preventive_screening';
     setStatus(status, isPreventive ? 'Sending your preventive screening request…' : 'Sending your appointment request…');
     try {
-      await postWebhook(APPOINTMENT_WEBHOOK, payload);
+      await submitAppointment(payload);
       setStatus(status, 'Thank you — your request is on its way to the clinic. We’ll be in touch shortly.', 'success');
       form.reset();
     } catch (error) {
