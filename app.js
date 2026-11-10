@@ -1,6 +1,7 @@
 const APPOINTMENT_WEBHOOK = 'https://api.manus.im/api/webhook/triggers/c52fc9be-e19c-4cc1-a216-bcde5fa96e94';
 const CALLBACK_WEBHOOK = 'https://api.manus.im/api/webhook/triggers/4d03e54a-29c5-4948-a3dc-32f5596b279c';
 const KNOWLEDGE_URL = 'clinic-knowledge.json';
+const CLINIC_PHONE = '919481731482';
 
 const translations = {
   en: { kicker: 'Compassionate dental care, close to home', heroTitle: 'Care that feels close,', heroAccent: 'smiles that move with you.', heroLead: 'A calm, clear dental experience for every age — from your first check-up to the confidence of a healthier smile.', heroCta: 'Find your next step', heroExplore: 'Explore our care', navCare: 'Our care', navDoctor: 'Meet Dr. Lata', navVisit: 'Visit us', navBook: 'Book appointment', bookingTitle: 'Find a dentist.<br><em>Find your next step.</em>', bookingLead: 'Tell us what you need and we’ll help you choose the right kind of care.', careLabel: '02 / Our care', careTitle: 'Clear care for<br><em>real life.</em>', careIntro: 'From prevention to precision treatment, your plan starts with listening. Search a concern below or choose a specialty to learn more.', searchLabel: 'Search a dental concern', searchPlaceholder: 'Try “toothache”, “braces”, or “missing tooth”', galleryLabel: '05 / Inside the clinic', galleryTitle: 'A real place.<br><em>Ready for you.</em>', galleryIntro: 'See the rooms, equipment, entrance and people behind your care. These are photographs from Bhoomika Dental Clinic in Badami.', doctorLabel: '06 / Your clinician', hoursLabel: '07 / Find us', conditionsLabel: '04 / Understand your mouth', conditionsTitle: 'Oral health,<br><em>from A to Z.</em>', conditionsIntro: 'A calm starting point for common symptoms, conditions and care questions. Browse a letter or search a topic — this is education, not a diagnosis.', conditionsCta: 'Talk to the clinic <span aria-hidden="true">↗</span>', conditionsSearch: 'Search Aphthous ulcer, gum bleeding, dry mouth…' },
@@ -26,7 +27,24 @@ async function postWebhook(url, payload) {
 }
 
 function collectForm(form) {
-  return Object.fromEntries(new FormData(form).entries());
+  const data = Object.fromEntries(new FormData(form).entries());
+  const files = $('#patient_files', form)?.files;
+  if (files?.length) data.attachment_names = [...files].map((file) => file.name);
+  delete data.patient_files;
+  return data;
+}
+
+function buildWhatsAppUrl(payload) {
+  const lines = [
+    'Bhoomika Dental Clinic appointment request',
+    `Name: ${payload.patient_name || ''}`,
+    `Phone: ${payload.patient_phone || ''}`,
+    `Email: ${payload.patient_email || ''}`,
+    `Care: ${payload.specialty || ''}`,
+    `Preferred: ${payload.preferred_date || 'Flexible'} ${payload.preferred_time || ''}`,
+    `Concern: ${payload.dental_concern || 'Not specified'}`
+  ];
+  return `https://wa.me/${CLINIC_PHONE}?text=${encodeURIComponent(lines.join('\n'))}`;
 }
 
 function initNavigation() {
@@ -119,6 +137,11 @@ function initBooking() {
   };
   workflow?.addEventListener('change', updateCareOptions);
   updateCareOptions();
+  $('#booking-whatsapp')?.addEventListener('click', () => {
+    if (!form.reportValidity()) return;
+    const payload = { ...collectForm(form), workflow_type: workflow?.value || 'appointment' };
+    window.open(buildWhatsAppUrl(payload), '_blank', 'noopener,noreferrer');
+  });
   form?.addEventListener('submit', async (event) => {
     event.preventDefault();
     if (!form.reportValidity()) return;

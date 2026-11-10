@@ -81,13 +81,19 @@
               <div><label for="patient_name">Your name <span class="required">*</span></label><input id="patient_name" name="patient_name" autocomplete="name" required></div>
               <div><label for="patient_phone">Phone <span class="required">*</span></label><input id="patient_phone" name="patient_phone" type="tel" autocomplete="tel" inputmode="tel" required></div>
             </div>
+            <label for="patientEmail">Email <span class="required">*</span></label>
+            <input id="patientEmail" name="patient_email" type="email" autocomplete="email" placeholder="you@example.com" required>
             <label for="specialty">What can we help with? <span class="required">*</span></label>
             <select id="specialty" name="specialty" required>
               <option value="">Select a care area</option><option>Dental X-Ray</option><option>Implants, Dentures, Crowns & Bridges</option><option>Orthodontic Braces Treatment</option><option>Teeth Scaling & Bleaching</option><option>Smile Design & Veneering</option><option>Dental Filling</option><option>Root Canal Treatment (RCT)</option><option>Extraction & Impaction Surgery</option>
             </select>
             <div class="form-grid"><div><label for="preferred_date">Preferred date</label><input id="preferred_date" name="preferred_date" type="date"></div><div><label for="preferred_time">Preferred time</label><input id="preferred_time" name="preferred_time" type="time"></div></div>
             <label for="dental_concern">Tell us a little more</label><textarea id="dental_concern" name="dental_concern" rows="2" placeholder="Pain, sensitivity, a check-up..."></textarea>
+            <label for="patient_files">Previous X-rays or dental reports <span class="optional">(optional)</span></label>
+            <input id="patient_files" name="patient_files" type="file" accept="image/*,.pdf" multiple>
+            <p class="field-note">For privacy, files are not uploaded from this form. Please bring them to your visit or share them with the clinic team after they contact you.</p>
             <button class="button button-full" type="submit">Request my appointment <span aria-hidden="true">↗</span></button>
+            <button class="button button-whatsapp" id="booking-whatsapp" type="button">Continue in WhatsApp <span aria-hidden="true">↗</span></button>
             <div id="booking-status" class="form-status" role="status" aria-live="polite"></div>
           </form>
         </div>
@@ -164,6 +170,8 @@
 
   <button class="voice-fab" id="voice-toggle" type="button" aria-expanded="false" aria-controls="voice-panel"><span class="voice-pulse" aria-hidden="true"></span><span class="voice-label">Talk to Bhoomika</span><span class="mic" aria-hidden="true">◉</span></button>
   <section class="voice-panel" id="voice-panel" aria-labelledby="voice-title" hidden><div class="voice-panel-head"><div><p class="section-label">Voice assistant</p><h2 id="voice-title">Tell us what you need.</h2></div><button class="icon-button" id="voice-close" type="button" aria-label="Close voice assistant">×</button></div><p>Ask about clinic hours, care areas, or say “I need an appointment for a toothache.”</p><div id="voice-transcript" class="voice-transcript" role="status" aria-live="polite">Press the microphone to begin.</div><div class="voice-typed"><label for="voice-question">Or type your question</label><div><input id="voice-question" type="text" placeholder="Where is the clinic?"><button class="button" id="voice-ask" type="button">Ask</button></div></div><div class="voice-actions"><button class="button" id="voice-listen" type="button"><span aria-hidden="true">◉</span> Start listening</button><button class="quiet-link" id="voice-speak" type="button">Read last answer aloud</button></div><div id="voice-answer" class="voice-answer" role="status" aria-live="polite"></div></section>
+
+<section class="workspace-section shell" aria-labelledby="workspace-title"><div class="workspace-card"><div><p class="section-label">Clinic workspace</p><h2 id="workspace-title">Keep the care team<br><em>in sync.</em></h2><p>Open the clinic’s Google Workspace tools from one place. Sign in with the clinic-owned account before viewing or editing patient information.</p></div><div class="workspace-links" aria-label="Google Workspace tools"><a href="https://drive.google.com/" target="_blank" rel="noreferrer">Drive <span>↗</span></a><a href="https://docs.google.com/" target="_blank" rel="noreferrer">Docs <span>↗</span></a><a href="https://sheets.google.com/" target="_blank" rel="noreferrer">Sheets <span>↗</span></a><a href="https://slides.google.com/" target="_blank" rel="noreferrer">Slides <span>↗</span></a><a href="https://forms.google.com/" target="_blank" rel="noreferrer">Forms <span>↗</span></a></div></div></section>
 
 <footer class="site-footer"><div class="shell footer-grid"><div><a class="brand footer-brand" href="#top"><span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 40 40"><path d="M20 4c-7 0-12 4-12 11 0 7 2 18 7 18 3 0 2-9 5-9s2 9 5 9c5 0 7-11 7-18C32 8 27 4 20 4Z"/><path d="M12 13c3-3 13-3 16 0"/></svg></span><span><strong>Bhoomika</strong><small>Dental Clinic</small></span></a><p>Small steps. Stronger smiles.</p></div><div><p class="footer-label">Contact</p><a href="tel:+919481731482">+91 9481731482</a><a href="#hours">TMC Complex, Badami</a></div><div><p class="footer-label">Explore</p><a href="#care">Our care</a><a href="#doctor">Meet Dr. Lata</a><a href="#hours">Clinic timings</a></div></div><div class="shell footer-bottom"><span>© 2026 Bhoomika Dental Clinic</span><span>Accessible care, in every sense.</span></div></footer>
 </body>
