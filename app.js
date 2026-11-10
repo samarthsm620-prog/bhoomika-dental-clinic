@@ -20,8 +20,8 @@ function setStatus(element, message, kind = '') {
 }
 
 async function postWebhook(url, payload) {
-  // text/plain keeps the browser request simple for a static Pages frontend.
-  return fetch(url, { method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'text/plain;charset=UTF-8' }, body: JSON.stringify(payload), keepalive: true });
+  // The Trigger webhook accepts JSON; CORS is enabled on the live endpoint.
+  return fetch(url, { method: 'POST', mode: 'cors', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload), keepalive: true });
 }
 
 function collectForm(form) {

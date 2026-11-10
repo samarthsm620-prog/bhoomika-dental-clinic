@@ -18,7 +18,7 @@ export async function onRequestPost({ request, env }) {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify({
-      system_instruction: { parts: [{ text: clinicContext }] },
+      systemInstruction: { parts: [{ text: clinicContext }] },
       contents: [{ role: 'user', parts: [{ text: `Respond in ${language}. User says: ${prompt}` }] }],
       generationConfig: { temperature: 0.3, maxOutputTokens: 240 }
     })
