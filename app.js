@@ -3,8 +3,8 @@ const CALLBACK_WEBHOOK = 'https://api.manus.im/api/webhook/triggers/4d03e54a-29c
 const KNOWLEDGE_URL = 'clinic-knowledge.json';
 
 const translations = {
-  en: { kicker: 'Compassionate dental care, close to home', heroTitle: 'Touching lives,', heroAccent: 'perfecting smiles.', heroLead: 'A calm, clear dental experience for every age — from your first check-up to the confidence of a healthier smile.', bookingTitle: 'Find a dentist.<br><em>Find your next step.</em>', bookingLead: 'Tell us what you need and we’ll help you choose the right kind of care.' },
-  kn: { kicker: 'ನಿಮ್ಮ ಮನೆಯ ಹತ್ತಿರ ಕಾಳಜಿಯ ದಂತ ಚಿಕಿತ್ಸೆ', heroTitle: 'ಜೀವನ ಮುಟ್ಟುವ,', heroAccent: 'ನಗುವನ್ನು ಪರಿಪೂರ್ಣಗೊಳಿಸುವ.', heroLead: 'ಪ್ರತಿ ವಯಸ್ಸಿಗೂ ಶಾಂತ ಮತ್ತು ಸ್ಪಷ್ಟ ದಂತ ಆರೈಕೆ — ಮೊದಲ ತಪಾಸಣೆಯಿಂದ ಆರೋಗ್ಯಕರ ನಗುವಿನ ಆತ್ಮವಿಶ್ವಾಸದವರೆಗೆ.', bookingTitle: 'ದಂತ ವೈದ್ಯರನ್ನು ಹುಡುಕಿ.<br><em>ಮುಂದಿನ ಹೆಜ್ಜೆ ತಿಳಿಯಿರಿ.</em>', bookingLead: 'ನಿಮಗೆ ಬೇಕಾದುದನ್ನು ತಿಳಿಸಿ; ಸರಿಯಾದ ಆರೈಕೆಯನ್ನು ಆಯ್ಕೆ ಮಾಡಲು ನಾವು ಸಹಾಯ ಮಾಡುತ್ತೇವೆ.' }
+  en: { kicker: 'Compassionate dental care, close to home', heroTitle: 'Care that feels close,', heroAccent: 'smiles that move with you.', heroLead: 'A calm, clear dental experience for every age — from your first check-up to the confidence of a healthier smile.', heroCta: 'Find your next step', heroExplore: 'Explore our care', navCare: 'Our care', navDoctor: 'Meet Dr. Lata', navVisit: 'Visit us', navBook: 'Book appointment', bookingTitle: 'Find a dentist.<br><em>Find your next step.</em>', bookingLead: 'Tell us what you need and we’ll help you choose the right kind of care.', careLabel: '02 / Our care', careTitle: 'Clear care for<br><em>real life.</em>', careIntro: 'From prevention to precision treatment, your plan starts with listening. Search a concern below or choose a specialty to learn more.', searchLabel: 'Search a dental concern', searchPlaceholder: 'Try “toothache”, “braces”, or “missing tooth”', galleryLabel: '04 / Inside the clinic', galleryTitle: 'A real place.<br><em>Ready for you.</em>', galleryIntro: 'See the rooms, equipment, entrance and people behind your care. These are photographs from Bhoomika Dental Clinic in Badami.', doctorLabel: '05 / Your clinician', hoursLabel: '06 / Find us' },
+  kn: { kicker: 'ನಿಮ್ಮ ಮನೆಯ ಹತ್ತಿರ ಕಾಳಜಿಯ ದಂತ ಚಿಕಿತ್ಸೆ', heroTitle: 'ನಿಮ್ಮ ಹತ್ತಿರದ ಕಾಳಜಿ,', heroAccent: 'ನಿಮ್ಮ ನಗುವಿನ ಹೊಸ ಹೆಜ್ಜೆ.', heroLead: 'ಪ್ರತಿ ವಯಸ್ಸಿಗೂ ಶಾಂತ ಮತ್ತು ಸ್ಪಷ್ಟ ದಂತ ಆರೈಕೆ — ಮೊದಲ ತಪಾಸಣೆಯಿಂದ ಆರೋಗ್ಯಕರ ನಗುವಿನ ಆತ್ಮವಿಶ್ವಾಸದವರೆಗೆ.', heroCta: 'ಮುಂದಿನ ಹೆಜ್ಜೆ ತಿಳಿಯಿರಿ', heroExplore: 'ನಮ್ಮ ಆರೈಕೆ ನೋಡಿ', navCare: 'ನಮ್ಮ ಆರೈಕೆ', navDoctor: 'ಡಾ. ಲತಾ ಅವರನ್ನು ಭೇಟಿ ಮಾಡಿ', navVisit: 'ನಮ್ಮನ್ನು ಭೇಟಿ ಮಾಡಿ', navBook: 'ಅಪಾಯಿಂಟ್‌ಮೆಂಟ್ ಬುಕ್ ಮಾಡಿ', bookingTitle: 'ದಂತ ವೈದ್ಯರನ್ನು ಹುಡುಕಿ.<br><em>ಮುಂದಿನ ಹೆಜ್ಜೆ ತಿಳಿಯಿರಿ.</em>', bookingLead: 'ನಿಮಗೆ ಬೇಕಾದುದನ್ನು ತಿಳಿಸಿ; ಸರಿಯಾದ ಆರೈಕೆಯನ್ನು ಆಯ್ಕೆ ಮಾಡಲು ನಾವು ಸಹಾಯ ಮಾಡುತ್ತೇವೆ.', careLabel: '02 / ನಮ್ಮ ಆರೈಕೆ', careTitle: 'ಸ್ಪಷ್ಟ ಆರೈಕೆ<br><em>ನಿಜ ಜೀವನಕ್ಕಾಗಿ.</em>', careIntro: 'ತಡೆಗಟ್ಟುವ ಆರೈಕೆಯಿಂದ ನಿಖರ ಚಿಕಿತ್ಸೆಯವರೆಗೆ, ನಿಮ್ಮ ಯೋಜನೆ ಕೇಳುವುದರಿಂದ ಆರಂಭವಾಗುತ್ತದೆ. ಸಮಸ್ಯೆಯನ್ನು ಹುಡುಕಿ ಅಥವಾ ಆರೈಕೆ ಆಯ್ಕೆಮಾಡಿ.', searchLabel: 'ದಂತ ಸಮಸ್ಯೆ ಹುಡುಕಿ', searchPlaceholder: '“ಹಲ್ಲು ನೋವು”, “ಬ್ರೇಸಸ್” ಅಥವಾ “ಹಲ್ಲು ಕಾಣೆಯಾಗಿದೆ” ಎಂದು ಪ್ರಯತ್ನಿಸಿ', galleryLabel: '04 / ಕ್ಲಿನಿಕ್ ಒಳಗೆ', galleryTitle: 'ನಿಜವಾದ ಸ್ಥಳ.<br><em>ನಿಮಗಾಗಿ ಸಿದ್ಧ.</em>', galleryIntro: 'ನಿಮ್ಮ ಆರೈಕೆಯ ಹಿಂದೆ ಇರುವ ಕೊಠಡಿಗಳು, ಉಪಕರಣಗಳು ಮತ್ತು ಜನರನ್ನು ನೋಡಿ. ಇವು ಬಾದಾಮಿಯ ಭೂಮಿಕಾ ದಂತ ಚಿಕಿತ್ಸಾಲಯದ ಚಿತ್ರಗಳು.', doctorLabel: '05 / ನಿಮ್ಮ ವೈದ್ಯರು', hoursLabel: '06 / ನಮ್ಮನ್ನು ಭೇಟಿ ಮಾಡಿ' }
 };
 
 let currentLanguage = 'en';
@@ -45,20 +45,27 @@ function initNavigation() {
 function initHeroMedia() {
   const slides = $$('.hero-slide');
   const count = $('.hero-slide-count');
+  const toggle = $('.hero-slide-toggle');
   if (slides.length < 2) return;
   let active = 0;
+  let timer = 0;
+  let paused = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
   const show = (next) => {
     active = (next + slides.length) % slides.length;
     slides.forEach((slide, index) => { slide.hidden = index !== active; });
     if (count) count.textContent = `${String(active + 1).padStart(2, '0')} / ${String(slides.length).padStart(2, '0')}`;
   };
+  const stop = () => { if (timer) window.clearInterval(timer); timer = 0; };
+  const start = () => { stop(); if (!paused && !document.hidden) timer = window.setInterval(() => show(active + 1), 6500); };
   $('.hero-slide-prev')?.addEventListener('click', () => show(active - 1));
   $('.hero-slide-next')?.addEventListener('click', () => show(active + 1));
-  let timer = window.setInterval(() => show(active + 1), 6500);
-  $('.hero-media')?.addEventListener('mouseenter', () => window.clearInterval(timer));
-  $('.hero-media')?.addEventListener('mouseleave', () => { timer = window.setInterval(() => show(active + 1), 6500); });
-  $('.hero-media')?.addEventListener('focusin', () => window.clearInterval(timer));
-  $('.hero-media')?.addEventListener('focusout', () => { timer = window.setInterval(() => show(active + 1), 6500); });
+  toggle?.addEventListener('click', () => { paused = !paused; toggle.setAttribute('aria-pressed', String(paused)); toggle.setAttribute('aria-label', paused ? 'Play automatic clinic highlights' : 'Pause automatic clinic highlights'); toggle.textContent = paused ? '▶' : 'Ⅱ'; start(); });
+  $('.hero-media')?.addEventListener('mouseenter', stop);
+  $('.hero-media')?.addEventListener('mouseleave', start);
+  $('.hero-media')?.addEventListener('focusin', stop);
+  $('.hero-media')?.addEventListener('focusout', start);
+  document.addEventListener('visibilitychange', start);
+  start();
 }
 
 function selectSpecialty(value) {
@@ -80,17 +87,35 @@ function initSpecialtyCards() {
 
 function initLanguage() {
   const button = $('.language-toggle');
+  const apply = () => {
+    $$('[data-i18n]').forEach((node) => { const value = translations[currentLanguage][node.dataset.i18n]; if (value) node.innerHTML = value; });
+    $$('[data-i18n-placeholder]').forEach((node) => { const value = translations[currentLanguage][node.dataset.i18nPlaceholder]; if (value) node.setAttribute('placeholder', value); });
+  };
   button?.addEventListener('click', () => {
     currentLanguage = currentLanguage === 'en' ? 'kn' : 'en';
     document.documentElement.lang = currentLanguage === 'kn' ? 'kn' : 'en';
     button.setAttribute('aria-pressed', String(currentLanguage === 'kn'));
-    $$('[data-i18n]').forEach((node) => { node.innerHTML = translations[currentLanguage][node.dataset.i18n]; });
+    apply();
   });
+  apply();
 }
 
 function initBooking() {
   const form = $('#booking-form');
   const status = $('#booking-status');
+  const workflow = $('#workflow_type');
+  const specialty = $('#specialty');
+  const specialtyLabel = $('label[for="specialty"]');
+  const appointmentOptions = ['Dental X-Ray', 'Implants, Dentures, Crowns & Bridges', 'Orthodontic Braces Treatment', 'Teeth Scaling & Bleaching', 'Smile Design & Veneering', 'Dental Filling', 'Root Canal Treatment (RCT)', 'Extraction & Impaction Surgery'];
+  const screeningOptions = ['Routine Cleaning', 'Deep Scaling or Root Planing', "Kids' Dental Preventive", 'Senior Oral Care'];
+  const updateCareOptions = () => {
+    if (!workflow || !specialty) return;
+    const preventive = workflow.value === 'preventive_screening';
+    specialty.innerHTML = `<option value="">${preventive ? 'Select a screening package' : 'Select a care area'}</option>${(preventive ? screeningOptions : appointmentOptions).map((item) => `<option>${item}</option>`).join('')}`;
+    if (specialtyLabel) specialtyLabel.childNodes[0].textContent = preventive ? 'Screening package ' : 'What can we help with? ';
+  };
+  workflow?.addEventListener('change', updateCareOptions);
+  updateCareOptions();
   form?.addEventListener('submit', async (event) => {
     event.preventDefault();
     if (!form.reportValidity()) return;
@@ -180,11 +205,24 @@ function initVoice() {
   const transcript = $('#voice-transcript');
   const answer = $('#voice-answer');
   const read = $('#voice-speak');
+  const question = $('#voice-question');
+  const ask = $('#voice-ask');
   let recognition;
   const open = (isOpen) => { fab.setAttribute('aria-expanded', String(isOpen)); panel.hidden = !isOpen; if (isOpen) listen.focus(); };
   fab?.addEventListener('click', () => open(panel.hidden));
   close?.addEventListener('click', () => open(false));
   read?.addEventListener('click', () => { if (lastAnswer) speak(lastAnswer); });
+  const handlePrompt = async (prompt) => {
+    transcript.textContent = `“${prompt}”`;
+    answer.textContent = 'Thinking…';
+    const spoken = prompt.toLowerCase();
+    const matched = Object.entries(knowledge?.specialties || {}).find(([term]) => spoken.includes(term));
+    if (matched) selectSpecialty(matched[1]);
+    else if (spoken.includes('appointment') || spoken.includes('book')) { $('#booking-panel')?.scrollIntoView({ behavior: 'smooth', block: 'center' }); setTimeout(() => $('#patient_name')?.focus(), 450); }
+    lastAnswer = await askAssistant(prompt); answer.textContent = lastAnswer; speak(lastAnswer);
+  };
+  ask?.addEventListener('click', () => { const prompt = question.value.trim(); if (prompt) { question.value = ''; handlePrompt(prompt); } });
+  question?.addEventListener('keydown', (event) => { if (event.key === 'Enter') ask?.click(); });
   if (!('webkitSpeechRecognition' in window || 'SpeechRecognition' in window)) {
     listen.disabled = true; listen.textContent = 'Voice input unavailable';
     return;
@@ -194,14 +232,7 @@ function initVoice() {
   recognition.onstart = () => { listen.textContent = 'Listening…'; transcript.textContent = 'I’m listening. Tell me what you need.'; };
   recognition.onerror = () => { listen.textContent = 'Try again'; transcript.textContent = 'I could not hear that clearly. You can type your question or call the clinic.'; };
   recognition.onend = () => { listen.textContent = 'Start listening'; };
-  recognition.onresult = async (event) => {
-    const prompt = event.results[0][0].transcript;
-    transcript.textContent = `“${prompt}”`;
-    answer.textContent = 'Thinking…';
-    const spoken = prompt.toLowerCase();
-    if (spoken.includes('appointment') || spoken.includes('book')) { $('#booking-panel')?.scrollIntoView({ behavior: 'smooth', block: 'center' }); setTimeout(() => $('#patient_name')?.focus(), 450); }
-    lastAnswer = await askAssistant(prompt); answer.textContent = lastAnswer; speak(lastAnswer);
-  };
+  recognition.onresult = (event) => handlePrompt(event.results[0][0].transcript);
   listen?.addEventListener('click', () => { recognition.lang = currentLanguage === 'kn' ? 'kn-IN' : 'en-IN'; recognition.start(); });
 }
 
