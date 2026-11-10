@@ -12,6 +12,7 @@
   <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="styles.css">
   <link rel="stylesheet" href="photo-upgrades.css">
+  <link rel="stylesheet" href="feedback.css">
   <script defer src="app.js"></script>
 </head>
 <body>
@@ -117,6 +118,36 @@
     <section id="doctor" class="doctor-section"><div class="shell doctor-layout"><div class="doctor-portrait"><img src="/images/clinic/clinic-doctor.jpg" alt="Dr. Lata H. Teredal standing beside a dental chair"><div class="portrait-overlay"><span>Care is a conversation.</span></div><span class="portrait-caption">A calm clinic experience</span></div><div class="doctor-copy"><p class="section-label" data-i18n="doctorLabel">05 / Your clinician</p><h2>Meet Dr. Lata.<br><em>Feel looked after.</em></h2><p>Dr. Lata H. Teredal brings thoughtful, practical dental care to every consultation. The goal is simple: understand what is happening, explain it clearly, and help you move forward with confidence.</p><div class="credential-row"><div><strong>BDS</strong><span>Qualified dental surgeon</span></div><div><strong>4.9/5</strong><span>Verified patient rating</span></div><div><strong>Badami</strong><span>Care rooted locally</span></div></div><div class="doctor-actions"><button class="button" type="button" data-open-booking>Book an in-clinic visit <span aria-hidden="true">↗</span></button><a class="quiet-link" href="tel:+919481731482">Call the clinic <span aria-hidden="true">↗</span></a></div></div></div></section>
 
     <section id="hours" class="hours-section shell" aria-labelledby="hours-title"><div class="hours-card"><div><p class="section-label" data-i18n="hoursLabel">06 / Find us</p><h2 id="hours-title">A calm visit<br><em>starts here.</em></h2><p class="address">TMC Complex, Badami<br>Karnataka, India</p><a class="quiet-link" href="https://maps.google.com/?q=TMC+Complex+Badami" target="_blank" rel="noreferrer">Open in Maps <span aria-hidden="true">↗</span></a></div><div class="hours-table"><div><span>Monday – Saturday</span><strong>10:30 AM – 2:30 PM</strong></div><div><span>Evening clinic</span><strong>5:00 PM – 7:30 PM</strong></div><div class="free-slot"><span>Monday free consultation</span><strong>10:30 AM – 2:00 PM <b>₹0</b></strong></div></div></div></section>
+
+    <section id="feedback" class="feedback-section shell" aria-labelledby="feedback-title">
+      <div class="feedback-card">
+        <div class="feedback-intro">
+          <p class="section-label">07 / Your experience</p>
+          <h2 id="feedback-title">Help us make every visit<br><em>feel more human.</em></h2>
+          <p>Your feedback helps our small clinic improve the welcome, the explanation, and the care around every appointment.</p>
+          <div class="feedback-summary" aria-live="polite"><strong id="feedback-average">—</strong><span class="summary-stars" aria-hidden="true">★★★★★</span><span id="feedback-count">No reviews yet</span></div>
+        </div>
+        <form id="feedback-form" class="feedback-form" novalidate>
+          <fieldset class="rating-fieldset">
+            <legend>How was your experience? <span class="required">*</span></legend>
+            <div class="star-rating" role="radiogroup" aria-label="Patient experience rating from one to five stars">
+              <input id="rating-5" name="rating" type="radio" value="5" required><label for="rating-5" title="Excellent">★<span class="sr-only">5 stars</span></label>
+              <input id="rating-4" name="rating" type="radio" value="4"><label for="rating-4" title="Very good">★<span class="sr-only">4 stars</span></label>
+              <input id="rating-3" name="rating" type="radio" value="3"><label for="rating-3" title="Good">★<span class="sr-only">3 stars</span></label>
+              <input id="rating-2" name="rating" type="radio" value="2"><label for="rating-2" title="Could be better">★<span class="sr-only">2 stars</span></label>
+              <input id="rating-1" name="rating" type="radio" value="1"><label for="rating-1" title="Needs attention">★<span class="sr-only">1 star</span></label>
+            </div>
+          </fieldset>
+          <label for="feedback-message">Tell us a little more <span class="required">*</span></label>
+          <textarea id="feedback-message" name="message" rows="3" maxlength="500" placeholder="What made your visit better, or what could we improve?" required></textarea>
+          <label for="feedback-name">Name <span class="optional">(optional)</span></label>
+          <input id="feedback-name" name="name" autocomplete="name" maxlength="80" placeholder="Your first name">
+          <button class="button button-dark" type="submit">Share feedback <span aria-hidden="true">↗</span></button>
+          <p class="feedback-privacy">Saved privately on this device for this website demo. Please do not include sensitive medical details.</p>
+          <div id="feedback-status" class="form-status" role="status" aria-live="polite"></div>
+        </form>
+      </div>
+    </section>
   </main>
 
   <aside class="callback-row" aria-label="Request a callback"><div class="shell callback-inner"><div class="callback-copy"><span class="callback-icon" aria-hidden="true">↗</span><div><strong>Need a little guidance?</strong><span>Leave your number and we’ll call you back.</span></div></div><form id="callback-form"><input type="hidden" name="workflow_type" value="callback_triage"><label class="sr-only" for="callback-name">Your name</label><input id="callback-name" name="name" placeholder="Your name" autocomplete="name" required><label class="sr-only" for="callback-phone">Phone number</label><input id="callback-phone" name="phone" type="tel" placeholder="Phone number" autocomplete="tel" required><label class="sr-only" for="callback-concern">Concern</label><input id="callback-concern" name="concern" placeholder="What can we help with?" required><button class="button button-dark" type="submit">Call me back <span aria-hidden="true">↗</span></button></form><div id="callback-status" class="form-status" role="status" aria-live="polite"></div></div></aside>

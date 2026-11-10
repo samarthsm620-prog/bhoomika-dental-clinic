@@ -149,7 +149,32 @@ function initCallback() {
     }
   });
 }
-
+function initFeedback() {
+  const form = $('#feedback-form');
+  const status = $('#feedback-status');
+  const average = $('#feedback-average');
+  const count = $('#feedback-count');
+  const key = 'bhoomika-patient-feedback-v1';
+  let entries = [];
+  try { entries = JSON.parse(localStorage.getItem(key) || '[]'); } catch { entries = []; }
+  const renderSummary = () => {
+    if (!entries.length) { average.textContent = '—'; count.textContent = 'No reviews yet'; return; }
+    const value = entries.reduce((sum, entry) => sum + Number(entry.rating), 0) / entries.length;
+    average.textContent = value.toFixed(1);
+    count.textContent = `${entries.length} ${entries.length === 1 ? 'review' : 'reviews'} shared`;
+  };
+  renderSummary();
+  form?.addEventListener('submit', (event) => {
+    event.preventDefault();
+    if (!form.reportValidity()) return;
+    const data = collectForm(form);
+    entries.push({ rating: Number(data.rating), message: data.message.trim(), name: data.name.trim(), created_at: new Date().toISOString() });
+    try { localStorage.setItem(key, JSON.stringify(entries.slice(-20))); } catch { /* keep the interaction useful if storage is blocked */ }
+    renderSummary();
+    form.reset();
+    setStatus(status, 'Thank you — your feedback has been saved on this device.', 'success');
+  });
+}
 async function loadKnowledge() {
   try { knowledge = await fetch(KNOWLEDGE_URL).then((response) => response.json()); } catch { knowledge = { specialties: {} }; }
 }
@@ -236,5 +261,5 @@ function initVoice() {
   listen?.addEventListener('click', () => { recognition.lang = currentLanguage === 'kn' ? 'kn-IN' : 'en-IN'; recognition.start(); });
 }
 
-async function boot() { initNavigation(); initHeroMedia(); initLanguage(); initBooking(); initCallback(); initSpecialtyCards(); await loadKnowledge(); initSearch(); initVoice(); }
+async function boot() { initNavigation(); initHeroMedia(); initLanguage(); initBooking(); initCallback(); initFeedback(); initSpecialtyCards(); await loadKnowledge(); initSearch(); initVoice(); }
 boot();
