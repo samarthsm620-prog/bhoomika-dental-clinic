@@ -42,6 +42,25 @@ function initNavigation() {
   }));
 }
 
+function initHeroMedia() {
+  const slides = $$('.hero-slide');
+  const count = $('.hero-slide-count');
+  if (slides.length < 2) return;
+  let active = 0;
+  const show = (next) => {
+    active = (next + slides.length) % slides.length;
+    slides.forEach((slide, index) => { slide.hidden = index !== active; });
+    if (count) count.textContent = `${String(active + 1).padStart(2, '0')} / ${String(slides.length).padStart(2, '0')}`;
+  };
+  $('.hero-slide-prev')?.addEventListener('click', () => show(active - 1));
+  $('.hero-slide-next')?.addEventListener('click', () => show(active + 1));
+  let timer = window.setInterval(() => show(active + 1), 6500);
+  $('.hero-media')?.addEventListener('mouseenter', () => window.clearInterval(timer));
+  $('.hero-media')?.addEventListener('mouseleave', () => { timer = window.setInterval(() => show(active + 1), 6500); });
+  $('.hero-media')?.addEventListener('focusin', () => window.clearInterval(timer));
+  $('.hero-media')?.addEventListener('focusout', () => { timer = window.setInterval(() => show(active + 1), 6500); });
+}
+
 function selectSpecialty(value) {
   const select = $('#specialty');
   if (!select) return;
@@ -186,5 +205,5 @@ function initVoice() {
   listen?.addEventListener('click', () => { recognition.lang = currentLanguage === 'kn' ? 'kn-IN' : 'en-IN'; recognition.start(); });
 }
 
-async function boot() { initNavigation(); initLanguage(); initBooking(); initCallback(); initSpecialtyCards(); await loadKnowledge(); initSearch(); initVoice(); }
+async function boot() { initNavigation(); initHeroMedia(); initLanguage(); initBooking(); initCallback(); initSpecialtyCards(); await loadKnowledge(); initSearch(); initVoice(); }
 boot();

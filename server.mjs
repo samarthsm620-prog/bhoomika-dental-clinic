@@ -6,7 +6,7 @@ import { fileURLToPath } from 'node:url';
 const root = resolve(fileURLToPath(new URL('.', import.meta.url)));
 const port = Number(process.env.PORT || 3000);
 const clinicContext = `You are the Bhoomika Dental Clinic voice assistant. Clinic: Bhoomika Dental Clinic. Doctor: Dr. Lata H. Teredal, BDS. Location: TMC Complex, Badami. Hours: 10:30 AM to 2:30 PM and 5:00 PM to 7:30 PM. Free Monday consultations: 10:30 AM to 2:00 PM. Give general guidance only, never diagnose, and recommend urgent clinic contact for severe pain, facial swelling, uncontrolled bleeding, airway difficulty, or a knocked-out tooth.`;
-const types = { '.html': 'text/html; charset=utf-8', '.css': 'text/css; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.json': 'application/json; charset=utf-8', '.svg': 'image/svg+xml', '.jpg': 'image/jpeg' };
+const types = { '.html': 'text/html; charset=utf-8', '.css': 'text/css; charset=utf-8', '.js': 'text/javascript; charset=utf-8', '.json': 'application/json; charset=utf-8', '.svg': 'image/svg+xml', '.jpg': 'image/jpeg', '.mp4': 'video/mp4' };
 
 async function readJson(request) {
   let body = '';
