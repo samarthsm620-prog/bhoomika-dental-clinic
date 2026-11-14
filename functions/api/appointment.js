@@ -1,66 +1,140 @@
+const SITE_ORIGIN = 'https://bhoomika-dental-clinic.pages.dev';
+const MAX_BODY_BYTES = 12000;
 const corsHeaders = {
-  'access-control-allow-origin': '*',
+  'access-control-allow-origin': SITE_ORIGIN,
   'access-control-allow-methods': 'POST, OPTIONS',
-  'access-control-allow-headers': 'content-type'
+  'access-control-allow-headers': 'content-type',
+  'cache-control': 'no-store'
 };
 
 const json = (body, status = 200) => Response.json(body, { status, headers: corsHeaders });
-
-async function requestWithRetry(url, options, attempts = 2) {
-  let lastError;
-  for (let attempt = 0; attempt < attempts; attempt += 1) {
-    try {
-      const response = await fetch(url, options);
-      if (response.ok) return response;
-      lastError = new Error(`Upstream returned ${response.status}`);
-    } catch (error) {
-      lastError = error;
-    }
-    if (attempt < attempts - 1) await new Promise((resolve) => setTimeout(resolve, 350 * (attempt + 1)));
-  }
-  throw lastError || new Error('Upstream request failed');
-}
+const clean = (value, max = 1000) => String(value ?? '').replace(/[\u0000-\u001f\u007f]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, max);
+const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
 function safePayload(input) {
-  const allowed = ['workflow_type', 'patient_name', 'patient_phone', 'patient_email', 'specialty', 'preferred_date', 'preferred_time', 'dental_concern', 'language', 'submitted_at', 'source', 'attachment_names'];
-  return Object.fromEntries(allowed.map((key) => [key, String(input?.[key] || '').slice(0, 1000)]));
+  const fields = {
+    workflow_type: 40,
+    patient_name: 100,
+    patient_phone: 32,
+    patient_email: 160,
+    specialty: 120,
+    preferred_date: 24,
+    preferred_time: 24,
+    dental_concern: 700,
+    language: 8,
+    source: 64
+  };
+  const payload = Object.fromEntries(Object.entries(fields).map(([key, max]) => [key, clean(input?.[key], max)]));
+  payload.consent = input?.consent === true || ['true', 'yes', 'on'].includes(String(input?.consent || '').toLowerCase());
+  payload.request_id = clean(input?.request_id, 80) || crypto.randomUUID();
+  payload.submitted_at = clean(input?.submitted_at, 40) || new Date().toISOString();
+  return payload;
 }
 
-async function sendEmail(payload, env) {
-  if (!env.EMAILJS_SERVICE_ID || !env.EMAILJS_TEMPLATE_ID || !env.EMAILJS_PUBLIC_KEY) return { configured: false };
-  const templateParams = {
-    ...payload,
-    clinic_email: env.CLINIC_EMAIL || '',
-    reply_to: payload.patient_email,
-    to_email: env.CLINIC_EMAIL || '',
-    appointment_type: payload.workflow_type === 'preventive_screening' ? 'Preventive screening' : 'Appointment request'
-  };
-  await requestWithRetry('https://api.emailjs.com/api/v1.0/email/send', {
+function validate(payload) {
+  const digits = payload.patient_phone.replace(/\D/g, '');
+  const validEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(payload.patient_email);
+  return payload.patient_name.length >= 2
+    && payload.patient_phone.length >= 7
+    && digits.length >= 7
+    && digits.length <= 15
+    && validEmail
+    && payload.specialty.length > 0
+    && ['appointment', 'preventive_screening'].includes(payload.workflow_type)
+    && payload.consent;
+}
+
+async function sendEmail(env, templateParams) {
+  const serviceId = env.EMAILJS_SERVICE_ID;
+  const templateId = env.EMAILJS_TEMPLATE_ID;
+  const publicKey = env.EMAILJS_PUBLIC_KEY;
+  if (!serviceId || !templateId || !publicKey) return false;
+  const response = await fetch('https://api.emailjs.com/api/v1.0/email/send', {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
-    body: JSON.stringify({ service_id: env.EMAILJS_SERVICE_ID, template_id: env.EMAILJS_TEMPLATE_ID, user_id: env.EMAILJS_PUBLIC_KEY, template_params: templateParams })
+    body: JSON.stringify({ service_id: serviceId, template_id: templateId, user_id: publicKey, template_params: templateParams })
   });
-  return { configured: true };
+  return response.ok;
+}
+
+async function sendEmailNotifications(payload, env) {
+  const clinicEmail = clean(env.CLINIC_EMAIL, 160).toLowerCase();
+  if (!env.EMAILJS_SERVICE_ID || !env.EMAILJS_TEMPLATE_ID || !env.EMAILJS_PUBLIC_KEY || !clinicEmail) {
+    return { configured: false, clinic_sent: false, patient_sent: false };
+  }
+
+  const careType = payload.workflow_type === 'preventive_screening' ? 'Preventive screening' : 'Appointment request';
+  const clinicSummary = [
+    'NEW APPOINTMENT REQUEST',
+    `Request ID: ${payload.request_id}`,
+    `Patient: ${payload.patient_name}`,
+    `Phone: ${payload.patient_phone}`,
+    `Email: ${payload.patient_email}`,
+    `Request type: ${careType}`,
+    `Care area: ${payload.specialty}`,
+    `Preferred date/time: ${payload.preferred_date || 'Flexible'} ${payload.preferred_time || ''}`.trim(),
+    `Concern: ${payload.dental_concern || 'Not specified'}`,
+    `Language: ${payload.language || 'en'}`
+  ].join('\n');
+  const firstAid = payload.language === 'kn'
+    ? 'ಮುಖದ ತೀವ್ರ ಊತ, ನಿಯಂತ್ರಿಸಲಾಗದ ರಕ್ತಸ್ರಾವ, ಹಲ್ಲಿನ ಗಾಯ, ಅಥವಾ ಉಸಿರಾಟ/ನುಂಗುವ ತೊಂದರೆ ಇದ್ದರೆ ತಕ್ಷಣ ಸ್ಥಳೀಯ ತುರ್ತು ವೈದ್ಯಕೀಯ ನೆರವು ಪಡೆಯಿರಿ. ಇಮೇಲ್ ಉತ್ತರಕ್ಕಾಗಿ ಕಾಯಬೇಡಿ. ಇದು ರೋಗನಿರ್ಣಯ ಅಥವಾ ತುರ್ತು ಸೇವೆಯಲ್ಲ.'
+    : 'If you have severe facial swelling, uncontrolled bleeding, a dental injury, or difficulty breathing or swallowing, seek urgent local medical care now. Do not wait for an email reply. This message is not a diagnosis or emergency service.';
+
+  let clinicSent = false;
+  let patientSent = false;
+  try {
+    clinicSent = await sendEmail(env, {
+      to_email: clinicEmail,
+      reply_to: payload.patient_email,
+      email_subject: `${careType} — ${payload.patient_name}`,
+      recipient_name: 'Bhoomika Dental Clinic team',
+      message_body: clinicSummary,
+      patient_first_aid: ''
+    });
+  } catch { /* Email is reported as incomplete without exposing provider details. */ }
+
+  // EmailJS documents a one-request-per-second limit; keep the second send under that limit.
+  await delay(1100);
+  try {
+    patientSent = await sendEmail(env, {
+      to_email: payload.patient_email,
+      reply_to: clinicEmail,
+      email_subject: 'We received your Bhoomika Dental Clinic request',
+      recipient_name: payload.patient_name,
+      message_body: `Thank you, ${payload.patient_name}. The clinic has received your ${careType.toLowerCase()} request and will contact you to confirm availability. Please note that this is a request, not a confirmed appointment.\n\n${firstAid}\n\nClinic: +91 9481731482`,
+      patient_first_aid: firstAid
+    });
+  } catch { /* Keep the clinic's appointment intake available if email delivery fails. */ }
+  return { configured: true, clinic_sent: clinicSent, patient_sent: patientSent };
 }
 
 async function logToSheets(payload, env) {
-  if (!env.GOOGLE_SHEETS_WEBHOOK_URL) return { configured: false };
-  const body = { ...payload, clinic_email: env.CLINIC_EMAIL || '', shared_secret: env.GOOGLE_SHEETS_SHARED_SECRET || '' };
-  await requestWithRetry(env.GOOGLE_SHEETS_WEBHOOK_URL, {
-    method: 'POST',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify(body)
+  if (!env.GOOGLE_SHEETS_WEBHOOK_URL || !env.GOOGLE_SHEETS_SHARED_SECRET) {
+    return { configured: false };
+  }
+  const body = new URLSearchParams({
+    token: env.GOOGLE_SHEETS_SHARED_SECRET,
+    payload: JSON.stringify(payload)
   });
-  return { configured: true };
+  const response = await fetch(env.GOOGLE_SHEETS_WEBHOOK_URL, {
+    method: 'POST',
+    headers: { 'content-type': 'application/x-www-form-urlencoded;charset=UTF-8' },
+    body
+  });
+  if (!response.ok) throw new Error('Sheets webhook failed');
+  const result = await response.json().catch(() => null);
+  if (!result?.ok) throw new Error('Sheets webhook rejected request');
+  return { configured: true, duplicate: Boolean(result.duplicate) };
 }
 
 async function logToManusWebhook(payload, env) {
-  const url = env.MANUS_APPOINTMENT_WEBHOOK || 'https://api.manus.im/api/webhook/triggers/c52fc9be-e19c-4cc1-a216-bcde5fa96e94';
-  await requestWithRetry(url, {
+  if (!env.MANUS_APPOINTMENT_WEBHOOK) return { configured: false };
+  const response = await fetch(env.MANUS_APPOINTMENT_WEBHOOK, {
     method: 'POST',
     headers: { 'content-type': 'application/json' },
     body: JSON.stringify(payload)
   });
+  if (!response.ok) throw new Error('Appointment webhook failed');
   return { configured: true };
 }
 
@@ -69,25 +143,33 @@ export async function onRequestOptions() {
 }
 
 export async function onRequestPost({ request, env }) {
-  let input;
-  try {
-    input = await request.json();
-  } catch {
-    return json({ error: 'Invalid JSON.' }, 400);
-  }
-  const payload = safePayload(input);
-  if (!payload.patient_name || !payload.patient_phone || !payload.patient_email) return json({ error: 'Name, phone, and email are required.' }, 400);
+  const raw = await request.text();
+  if (new TextEncoder().encode(raw).byteLength > MAX_BODY_BYTES) return json({ error: 'Request is too large.' }, 413);
 
-  const results = await Promise.allSettled([
-    sendEmail(payload, env),
+  let input;
+  try { input = JSON.parse(raw); } catch { return json({ error: 'Invalid request.' }, 400); }
+  if (clean(input?.website, 100)) return json({ ok: true, ignored: true });
+
+  const payload = safePayload(input);
+  if (!validate(payload)) return json({ error: 'Please provide a valid name, phone, email, care area, and consent.' }, 400);
+
+  const outcomes = await Promise.allSettled([
+    sendEmailNotifications(payload, env),
     logToSheets(payload, env),
     logToManusWebhook(payload, env)
   ]);
-  const emailResult = results[0];
-  const email_configured = emailResult.status === 'fulfilled' && emailResult.value.configured;
-  const failures = results.filter((result) => result.status === 'rejected');
-  const configured = results.filter((result) => result.status === 'fulfilled' && result.value.configured).length;
-  if (failures.length && configured === 0) return json({ error: 'No appointment integrations are configured.' }, 503);
-  if (failures.length) return json({ ok: true, partial: true, email_configured, message: 'Appointment received; one or more notification channels need attention.' });
-  return json({ ok: true, email_configured, message: 'Appointment received and routed to the clinic.' });
+  const email = outcomes[0].status === 'fulfilled' ? outcomes[0].value : { configured: false, clinic_sent: false, patient_sent: false };
+  const sheets = outcomes[1].status === 'fulfilled' ? outcomes[1].value : { configured: false };
+  const webhook = outcomes[2].status === 'fulfilled' ? outcomes[2].value : { configured: false };
+  const configured = [email.configured, sheets.configured, webhook.configured].filter(Boolean).length;
+
+  if (configured === 0) return json({ error: 'Appointment routing is not configured.' }, 503);
+  return json({
+    ok: true,
+    request_id: payload.request_id,
+    email_configured: Boolean(email.clinic_sent && email.patient_sent),
+    email_status: email.configured ? (email.clinic_sent && email.patient_sent ? 'sent' : 'partial') : 'not_configured',
+    sheets_logged: Boolean(sheets.configured),
+    message: 'Appointment request received.'
+  });
 }

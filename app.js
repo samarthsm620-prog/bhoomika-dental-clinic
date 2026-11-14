@@ -1,9 +1,6 @@
 const APPOINTMENT_WEBHOOK = 'https://api.manus.im/api/webhook/triggers/c52fc9be-e19c-4cc1-a216-bcde5fa96e94';
 const CALLBACK_WEBHOOK = 'https://api.manus.im/api/webhook/triggers/4d03e54a-29c5-4948-a3dc-32f5596b279c';
 const KNOWLEDGE_URL = 'clinic-knowledge.json';
-const EMAILJS_PUBLIC_KEY = '4F8rvg3HsYXpJ3NTa';
-const EMAILJS_SERVICE_ID = 'service_oz00kf3';
-const EMAILJS_TEMPLATE_ID = 'p__ejs-test-mail-service__';
 const CLINIC_PHONE = '919481731482';
 
 const translations = {
@@ -63,23 +60,6 @@ function buildWhatsAppUrl(payload) {
     `Concern: ${payload.dental_concern || 'Not specified'}`
   ];
   return `https://wa.me/${CLINIC_PHONE}?text=${encodeURIComponent(lines.join('\n'))}`;
-}
-
-function initEmailJS() {
-  if (window.emailjs) window.emailjs.init({ publicKey: EMAILJS_PUBLIC_KEY });
-}
-
-function sendAppointmentEmail() {
-  if (!window.emailjs) throw new Error('EmailJS client unavailable');
-  const emailPayload = {
-    patient_name: document.getElementById('patientName').value,
-    patient_phone: document.getElementById('patientPhone').value,
-    patient_email: document.getElementById('patientEmail').value,
-    care_area: document.getElementById('careArea').value,
-    preferred_date: document.getElementById('preferredDate').value,
-    preferred_time: document.getElementById('preferredTime').value
-  };
-  return window.emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, emailPayload);
 }
 
 function initNavigation() {
@@ -174,6 +154,7 @@ function initLanguage() {
   const apply = () => {
     $$('[data-i18n]').forEach((node) => { const value = translations[currentLanguage][node.dataset.i18n]; if (value) node.innerHTML = value; });
     $$('[data-i18n-placeholder]').forEach((node) => { const value = translations[currentLanguage][node.dataset.i18nPlaceholder]; if (value) node.setAttribute('placeholder', value); });
+    $$('[data-l10n-en][data-l10n-kn]').forEach((node) => { node.textContent = node.dataset[currentLanguage === 'kn' ? 'l10nKn' : 'l10nEn']; });
     const allTab = $('#condition-letters .condition-letter');
     if (allTab) allTab.textContent = currentLanguage === 'kn' ? 'ಎಲ್ಲಾ' : 'All';
   };
@@ -193,7 +174,7 @@ function initBooking() {
   const specialty = $('#careArea');
   const specialtyLabel = $('label[for="careArea"]');
   const confirmation = $('#booking-confirmation');
-  const appointmentOptions = ['Dental X-Ray', 'Implants, Dentures, Crowns & Bridges', 'Orthodontic Braces Treatment', 'Teeth Scaling & Bleaching', 'Smile Design & Veneering', 'Dental Filling', 'Root Canal Treatment (RCT)', 'Extraction & Impaction Surgery'];
+  const appointmentOptions = ['General dental consultation', 'Dental X-Ray', 'Implants, Dentures, Crowns & Bridges', 'Orthodontic Braces Treatment', 'Teeth Scaling & Bleaching', 'Smile Design & Veneering', 'Dental Filling', 'Root Canal Treatment (RCT)', 'Extraction & Impaction Surgery'];
   const screeningOptions = ['Routine Cleaning', 'Deep Scaling or Root Planing', "Kids' Dental Preventive", 'Senior Oral Care'];
   const updateCareOptions = () => {
     if (!workflow || !specialty) return;
@@ -216,17 +197,23 @@ function initBooking() {
     setStatus(status, isPreventive ? 'Sending your preventive screening request…' : 'Sending your appointment request…');
     if (confirmation) confirmation.hidden = true;
     try {
-const automation = await submitAppointment(payload);
-      if (!automation.email_configured) await sendAppointmentEmail();
-      setStatus(status, 'Thank you — your request is on its way to the clinic. We’ll be in touch shortly.', 'success');
+      const automation = await submitAppointment(payload);
+      const emailStatus = automation.email_status || (automation.email_configured ? 'sent' : 'not_configured');
+      const emailReady = emailStatus === 'sent' || Boolean(automation.email_configured);
+      const emailMessage = emailStatus === 'partial'
+        ? 'Your request reached the clinic, but one of the email notifications could not be delivered. The clinic will contact you by phone.'
+        : emailReady
+          ? 'Thank you — your request and email confirmation have been sent.'
+          : 'Thank you — your request reached the clinic. Automated email confirmation is not active yet; the clinic will contact you by phone.';
+      setStatus(status, emailMessage, 'success');
       if (confirmation) {
         confirmation.hidden = false;
-        confirmation.textContent = 'Request received. Your details have reached Dr. Lata’s clinic team — we’ll contact you at the email or phone number you provided.';
+        confirmation.textContent = emailStatus === 'partial' ? 'Request received. Email delivery was incomplete, so the clinic will contact you by phone. This is a request, not a confirmed appointment.' : emailReady ? 'Request received. The clinic team has been notified and a confirmation email was sent to you. This is a request, not a confirmed appointment.' : 'Request received. The clinic team has your request; automated email confirmation is still being set up. This is a request, not a confirmed appointment. For urgent concerns, call +91 9481731482.';
       }
       form.reset();
     } catch (error) {
       if (confirmation) confirmation.hidden = false;
-      if (confirmation) confirmation.textContent = 'We could not complete the email confirmation. Please call +91 9481731482 so the clinic can help you directly.';
+      if (confirmation) confirmation.textContent = 'We could not complete the request just now. Please call +91 9481731482 so the clinic can help you directly.';
       setStatus(status, 'Your request could not be fully sent just now. Please call +91 9481731482.', 'error');
     }
   });
@@ -235,22 +222,30 @@ const automation = await submitAppointment(payload);
 function initCheckup() {
   const form = $('#checkup-form');
   const result = $('#checkup-result');
-  const recommendations = {
-    pain: { care: 'Root Canal Treatment (RCT)', title: 'Start with a focused tooth-pain consultation.', text: 'A clinician can check the source of pain or sensitivity and explain the least-invasive next step.' },
-    gums: { care: 'Teeth Scaling & Bleaching', title: 'Start with a gum-health consultation.', text: 'The clinic can check bleeding or swelling and suggest a comfortable prevention plan.' },
-    missing: { care: 'Implants, Dentures, Crowns & Bridges', title: 'Start with a restorative-care consultation.', text: 'A visit can map the options for protecting function and rebuilding your smile.' },
-    alignment: { care: 'Orthodontic Braces Treatment', title: 'Start with an alignment consultation.', text: 'The team can discuss whether braces or another orthodontic approach fits your goals.' },
-    preventive: { care: 'Dental X-Ray', title: 'Start with a preventive check-up.', text: 'A routine review can help you understand what to maintain and what to watch next.' }
-  };
   form?.addEventListener('submit', (event) => {
     event.preventDefault();
     if (!form.reportValidity()) return;
     const answers = Object.fromEntries(new FormData(form).entries());
-    const recommendation = recommendations[answers.concern] || recommendations.preventive;
-    const urgencyNote = answers.urgency === 'soon' ? ' If you have facial swelling, fever, or difficulty breathing or swallowing, seek urgent medical help.' : '';
+    const labels = currentLanguage === 'kn'
+      ? { pain: 'ನೋವು ಅಥವಾ ಹಲ್ಲಿನ ಸಂವೇದನೆ', gums: 'ಒಸಡುಗಳ ರಕ್ತಸ್ರಾವ ಅಥವಾ ಊತ', missing: 'ಕಾಣೆಯಾದ ಅಥವಾ ಹಾನಿಗೊಂಡ ಹಲ್ಲು', alignment: 'ಹಲ್ಲುಗಳ ಜೋಡಣೆ ಕುರಿತು ಪ್ರಶ್ನೆ', preventive: 'ನಿಯಮಿತ ತಪಾಸಣೆ ಅಥವಾ ಸ್ವಚ್ಛತೆ', soon: 'ಸಾಧ್ಯವಾದಷ್ಟು ಬೇಗ', week: 'ಮುಂದಿನ ವಾರದೊಳಗೆ', routine: 'ಮುಂಚಿತವಾಗಿ ಯೋಜನೆ', recent: 'ಕಳೆದ 6 ತಿಂಗಳೊಳಗೆ', year: '6–12 ತಿಂಗಳುಗಳ ಹಿಂದೆ', long: 'ಒಂದು ವರ್ಷಕ್ಕಿಂತ ಹೆಚ್ಚು ಹಿಂದೆ' }
+      : { pain: 'Pain or tooth sensitivity', gums: 'Bleeding or swollen gums', missing: 'Missing or damaged tooth', alignment: 'Question about tooth alignment', preventive: 'Routine check-up or cleaning', soon: 'As soon as possible', week: 'Within the next week', routine: 'Planning ahead', recent: 'Within the last 6 months', year: '6–12 months ago', long: 'More than a year ago' };
+    const concern = labels[answers.concern] || labels.preventive;
+    const urgency = labels[answers.urgency] || labels.week;
+    const lastVisit = labels[answers.last_visit] || labels.long;
+    const title = currentLanguage === 'kn' ? 'ಸಾಮಾನ್ಯ ದಂತ ಸಮಾಲೋಚನೆಯಿಂದ ಪ್ರಾರಂಭಿಸಿ.' : 'Start with a general dental consultation.';
+    const text = currentLanguage === 'kn' ? 'ಈ ಸ್ವಯಂ ಪರಿಶೀಲನೆ ರೋಗನಿರ್ಣಯವಲ್ಲ. ವೈದ್ಯರು ನಿಮ್ಮನ್ನು ಪರಿಶೀಲಿಸಿ, ಸೂಕ್ತ ಮುಂದಿನ ಹೆಜ್ಜೆಯನ್ನು ವಿವರಿಸುತ್ತಾರೆ.' : 'This self-check is not a diagnosis. A dentist can assess your concern and explain the appropriate next step.';
+    const urgencyNote = answers.urgency === 'soon' ? (currentLanguage === 'kn' ? ' ಮುಖದ ತೀವ್ರ ಊತ, ನಿಯಂತ್ರಿಸಲಾಗದ ರಕ್ತಸ್ರಾವ ಅಥವಾ ಉಸಿರಾಟ/ನುಂಗುವ ತೊಂದರೆ ಇದ್ದರೆ ತಕ್ಷಣ ತುರ್ತು ವೈದ್ಯಕೀಯ ನೆರವು ಪಡೆಯಿರಿ.' : ' If you have severe facial swelling, uncontrolled bleeding, or difficulty breathing or swallowing, seek urgent medical care now.') : '';
+    const bookLabel = currentLanguage === 'kn' ? 'ಈ ಮಾಹಿತಿಯೊಂದಿಗೆ ವಿನಂತಿ ಮಾಡಿ' : 'Use this result to request a visit';
     result.hidden = false;
-    result.innerHTML = `<strong>${recommendation.title}</strong><p>${recommendation.text}${urgencyNote}</p><button class="button button-dark" id="checkup-book" type="button">Use this result to book <span aria-hidden="true">↗</span></button>`;
-    $('#checkup-book')?.addEventListener('click', () => { selectSpecialty(recommendation.care); $('#dental_concern')?.focus(); });
+    result.innerHTML = `<strong>${title}</strong><p>${text}${urgencyNote}</p><button class="button button-dark" id="checkup-book" type="button">${bookLabel} <span aria-hidden="true">↗</span></button>`;
+    $('#checkup-book')?.addEventListener('click', () => {
+      const workflow = $('#workflow_type');
+      if (workflow) { workflow.value = 'appointment'; workflow.dispatchEvent(new Event('change', { bubbles: true })); }
+      selectSpecialty('General dental consultation');
+      const concernField = $('#dental_concern');
+      if (concernField) concernField.value = `${concern}; preferred timing: ${urgency}; last dental visit: ${lastVisit}. Self-check only; no diagnosis.`;
+      concernField?.focus();
+    });
   });
 }
 
@@ -357,11 +352,23 @@ function localAnswer(prompt) {
   return currentLanguage === 'kn' ? 'ನಿಮಗೆ ಸಹಾಯ ಮಾಡಲು ನಾವು ಇಲ್ಲಿದ್ದೇವೆ. ಗಂಟೆಗಳು, ಸ್ಥಳ ಅಥವಾ ಅಪಾಯಿಂಟ್‌ಮೆಂಟ್ ಕುರಿತು ಕೇಳಿ.' : 'I’m here to help. Ask about clinic hours, location, or booking an appointment.';
 }
 
+function setAssistantMode(mode) {
+  const label = $('#voice-mode');
+  if (!label) return;
+  const messages = currentLanguage === 'kn'
+    ? { checking: 'ಜೆಮಿನಿ ಸಂಪರ್ಕ ಪರಿಶೀಲಿಸಲಾಗುತ್ತಿದೆ…', online: 'ಜೆಮಿನಿ ಸಂಪರ್ಕಗೊಂಡಿದೆ.', offline: 'ಜೆಮಿನಿ ಇನ್ನೂ ಸಂಪರ್ಕಗೊಂಡಿಲ್ಲ — ಕ್ಲಿನಿಕ್ ಮಾಹಿತಿಯನ್ನು ತೋರಿಸಲಾಗುತ್ತಿದೆ.' }
+    : { checking: 'Checking Gemini connection…', online: 'Gemini is connected.', offline: 'Gemini is not connected yet — showing clinic information instead.' };
+  label.textContent = messages[mode] || messages.offline;
+  label.dataset.state = mode;
+}
+
 async function askAssistant(prompt) {
+  setAssistantMode('checking');
   try {
     const response = await fetch('/api/gemini', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ prompt, language: currentLanguage === 'kn' ? 'Kannada' : 'English' }) });
-    if (response.ok) { const data = await response.json(); if (data.text) return data.text; }
+    if (response.ok) { const data = await response.json(); if (data.text) { setAssistantMode('online'); return data.text; } }
   } catch { /* local fallback is intentional */ }
+  setAssistantMode('offline');
   return localAnswer(prompt);
 }
 
@@ -419,5 +426,5 @@ function initVoice() {
 }
 
 async function loadDisorders() { try { disorders = await fetch('oral-disorders.json').then((response) => response.json()); } catch { disorders = []; } }
-async function boot() { initEmailJS(); initNavigation(); initHeroMedia(); initLanguage(); initBooking(); initCheckup(); initCallback(); initFeedback(); initSpecialtyCards(); await Promise.all([loadKnowledge(), loadDisorders()]); initSearch(); initConditions(); initVoice(); }
+async function boot() { initNavigation(); initHeroMedia(); initLanguage(); initBooking(); initCheckup(); initCallback(); initFeedback(); initSpecialtyCards(); await Promise.all([loadKnowledge(), loadDisorders()]); initSearch(); initConditions(); initVoice(); }
 boot();
