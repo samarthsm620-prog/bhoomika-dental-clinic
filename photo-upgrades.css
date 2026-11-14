@@ -24,3 +24,8 @@
   .hero-stage .hero-media{height:295px;min-height:295px}
   .hero-stage .booking-card{padding:24px}
 }
+
+/* The full-bleed hero must not inherit the legacy two-column .hero grid. */
+.hero-stage{display:block}
+.hero-stage>.hero-inner.shell{width:min(1180px,calc(100vw - 40px));margin-inline:auto}
+@media(max-width:720px){.hero-stage>.hero-inner.shell{width:100%}}
