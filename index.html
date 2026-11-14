@@ -14,6 +14,8 @@
   <link rel="stylesheet" href="photo-upgrades.css">
   <link rel="stylesheet" href="feedback.css">
   <link rel="stylesheet" href="disorders.css">
+  <link rel="stylesheet" href="emailjs-upgrades.css">
+  <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@4/dist/email.min.js"></script>
   <script defer src="app.js"></script>
 </head>
 <body>
@@ -78,17 +80,20 @@
               <option value="preventive_screening">A preventive screening</option>
             </select>
             <div class="form-grid">
-              <div><label for="patient_name">Your name <span class="required">*</span></label><input id="patient_name" name="patient_name" autocomplete="name" required></div>
-              <div><label for="patient_phone">Phone <span class="required">*</span></label><input id="patient_phone" name="patient_phone" type="tel" autocomplete="tel" inputmode="tel" required></div>
+              <div><label for="patientName">Your name <span class="required">*</span></label><input id="patientName" name="patient_name" autocomplete="name" required></div>
+              <div><label for="patientPhone">Phone <span class="required">*</span></label><input id="patientPhone" name="patient_phone" type="tel" autocomplete="tel" inputmode="tel" required></div>
             </div>
-            <label for="specialty">What can we help with? <span class="required">*</span></label>
-            <select id="specialty" name="specialty" required>
+            <label for="patientEmail">Email address <span class="required">*</span></label>
+            <input id="patientEmail" name="patient_email" type="email" autocomplete="email" required>
+            <label for="careArea">What can we help with? <span class="required">*</span></label>
+            <select id="careArea" name="specialty" required>
               <option value="">Select a care area</option><option>Dental X-Ray</option><option>Implants, Dentures, Crowns & Bridges</option><option>Orthodontic Braces Treatment</option><option>Teeth Scaling & Bleaching</option><option>Smile Design & Veneering</option><option>Dental Filling</option><option>Root Canal Treatment (RCT)</option><option>Extraction & Impaction Surgery</option>
             </select>
-            <div class="form-grid"><div><label for="preferred_date">Preferred date</label><input id="preferred_date" name="preferred_date" type="date"></div><div><label for="preferred_time">Preferred time</label><input id="preferred_time" name="preferred_time" type="time"></div></div>
+            <div class="form-grid"><div><label for="preferredDate">Preferred date</label><input id="preferredDate" name="preferred_date" type="date"></div><div><label for="preferredTime">Preferred time</label><input id="preferredTime" name="preferred_time" type="time"></div></div>
             <label for="dental_concern">Tell us a little more</label><textarea id="dental_concern" name="dental_concern" rows="2" placeholder="Pain, sensitivity, a check-up..."></textarea>
             <button class="button button-full" type="submit">Request my appointment <span aria-hidden="true">↗</span></button>
             <div id="booking-status" class="form-status" role="status" aria-live="polite"></div>
+            <div id="booking-confirmation" class="booking-confirmation" role="status" aria-live="polite" hidden></div>
           </form>
         </div>
       </div>
@@ -123,9 +128,9 @@
       </div>
     </section>
 
-    <section class="clinic-gallery shell" aria-labelledby="gallery-title"><div class="section-heading"><div><p class="section-label" data-i18n="galleryLabel">05 / Inside the clinic</p><h2 id="gallery-title" data-i18n="galleryTitle">A real place.<br><em>Ready for you.</em></h2></div><p class="section-intro" data-i18n="galleryIntro">See the rooms, equipment, entrance and people behind your care. These are photographs from Bhoomika Dental Clinic in Badami.</p></div><div class="gallery-grid"><figure class="gallery-feature"><img src="/images/clinic/clinic-doctor.jpg" alt="Dr. Lata H. Teredal standing in the clinic treatment room"><figcaption>Dr. Lata H. Teredal · clinician-led care</figcaption></figure><figure><img src="/images/clinic/clinic-room.jpg" alt="Bhoomika Dental Clinic treatment room"><figcaption>Comfortable treatment room</figcaption></figure><figure><img src="/images/clinic/clinic-exterior.jpg" alt="Bhoomika Dental Clinic entrance"><figcaption>Find us at TMC Complex</figcaption></figure><figure><img src="/images/clinic/clinic-equipment.jpg" alt="Dental equipment in the clinic"><figcaption>Prepared for precise care</figcaption></figure><figure><img src="/images/clinic/clinic-chair.jpg" alt="Dental treatment chair inside the clinic"><figcaption>Designed for a calmer visit</figcaption></figure><figure><img src="/images/clinic/clinic-sign.jpg" alt="Bhoomika Dental Clinic sign"><figcaption>Local care in Badami</figcaption></figure></div></section>
+    <section class="clinic-gallery shell" aria-labelledby="gallery-title"><div class="section-heading"><div><p class="section-label" data-i18n="galleryLabel">05 / Inside the clinic</p><h2 id="gallery-title" data-i18n="galleryTitle">A real place.<br><em>Ready for you.</em></h2></div><p class="section-intro" data-i18n="galleryIntro">See the rooms, equipment, entrance and people behind your care. These are photographs from Bhoomika Dental Clinic in Badami.</p></div><div class="gallery-grid"><figure><img src="/images/clinic/clinic-room.jpg" alt="Bhoomika Dental Clinic treatment room"><figcaption>Comfortable treatment room</figcaption></figure><figure><img src="/images/clinic/clinic-exterior.jpg" alt="Bhoomika Dental Clinic entrance"><figcaption>Find us at TMC Complex</figcaption></figure><figure><img src="/images/clinic/clinic-equipment.jpg" alt="Dental equipment in the clinic"><figcaption>Prepared for precise care</figcaption></figure><figure><img src="/images/clinic/clinic-chair.jpg" alt="Dental treatment chair inside the clinic"><figcaption>Designed for a calmer visit</figcaption></figure><figure><img src="/images/clinic/clinic-sign.jpg" alt="Bhoomika Dental Clinic sign"><figcaption>Local care in Badami</figcaption></figure></div></section>
 
-    <section id="doctor" class="doctor-section"><div class="shell doctor-layout"><div class="doctor-portrait"><div class="portrait-overlay"><span>Care is a conversation.</span></div><span class="portrait-caption">A calm clinic experience</span></div><div class="doctor-copy"><p class="section-label" data-i18n="doctorLabel">06 / Your clinician</p><h2>Meet Dr. Lata.<br><em>Feel looked after.</em></h2><p>Dr. Lata H. Teredal brings thoughtful, practical dental care to every consultation. The goal is simple: understand what is happening, explain it clearly, and help you move forward with confidence.</p><div class="credential-row"><div><strong>BDS</strong><span>Qualified dental surgeon</span></div><div><strong>4.9/5</strong><span>Verified patient rating</span></div><div><strong>Badami</strong><span>Care rooted locally</span></div></div><div class="doctor-actions"><button class="button" type="button" data-open-booking>Book an in-clinic visit <span aria-hidden="true">↗</span></button><a class="quiet-link" href="tel:+919481731482">Call the clinic <span aria-hidden="true">↗</span></a></div></div></div></section>
+    <section id="doctor" class="doctor-section"><div class="shell doctor-layout"><div class="doctor-portrait"><img src="/images/clinic/clinic-doctor.jpg" alt="Dr. Lata H. Teredal standing beside a dental chair"><div class="portrait-overlay"><span>Care is a conversation.</span></div><span class="portrait-caption">A calm clinic experience</span></div><div class="doctor-copy"><p class="section-label" data-i18n="doctorLabel">06 / Your clinician</p><h2>Meet Dr. Lata.<br><em>Feel looked after.</em></h2><p>Dr. Lata H. Teredal brings thoughtful, practical dental care to every consultation. The goal is simple: understand what is happening, explain it clearly, and help you move forward with confidence.</p><div class="credential-row"><div><strong>BDS</strong><span>Qualified dental surgeon</span></div><div><strong>4.9/5</strong><span>Verified patient rating</span></div><div><strong>Badami</strong><span>Care rooted locally</span></div></div><div class="doctor-actions"><button class="button" type="button" data-open-booking>Book an in-clinic visit <span aria-hidden="true">↗</span></button><a class="quiet-link" href="tel:+919481731482">Call the clinic <span aria-hidden="true">↗</span></a></div></div></div></section>
 
     <section id="hours" class="hours-section shell" aria-labelledby="hours-title"><div class="hours-card"><div><p class="section-label" data-i18n="hoursLabel">07 / Find us</p><h2 id="hours-title">A calm visit<br><em>starts here.</em></h2><p class="address">TMC Complex, Badami<br>Karnataka, India</p><a class="quiet-link" href="https://maps.google.com/?q=TMC+Complex+Badami" target="_blank" rel="noreferrer">Open in Maps <span aria-hidden="true">↗</span></a></div><div class="hours-table"><div><span>Monday – Saturday</span><strong>10:30 AM – 2:30 PM</strong></div><div><span>Evening clinic</span><strong>5:00 PM – 7:30 PM</strong></div><div class="free-slot"><span>Monday free consultation</span><strong>10:30 AM – 2:00 PM <b>₹0</b></strong></div></div></div></section>
 

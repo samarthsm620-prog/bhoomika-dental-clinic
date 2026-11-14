@@ -1,6 +1,9 @@
 const APPOINTMENT_WEBHOOK = 'https://api.manus.im/api/webhook/triggers/c52fc9be-e19c-4cc1-a216-bcde5fa96e94';
 const CALLBACK_WEBHOOK = 'https://api.manus.im/api/webhook/triggers/4d03e54a-29c5-4948-a3dc-32f5596b279c';
 const KNOWLEDGE_URL = 'clinic-knowledge.json';
+const EMAILJS_PUBLIC_KEY = '4F8rvg3HsYXpJ3NTa';
+const EMAILJS_SERVICE_ID = 'service_oz00kf3';
+const EMAILJS_TEMPLATE_ID = 'p__ejs-test-mail-service__';
 
 const translations = {
   en: { kicker: 'Compassionate dental care, close to home', heroTitle: 'Care that feels close,', heroAccent: 'smiles that move with you.', heroLead: 'A calm, clear dental experience for every age — from your first check-up to the confidence of a healthier smile.', heroCta: 'Find your next step', heroExplore: 'Explore our care', navCare: 'Our care', navDoctor: 'Meet Dr. Lata', navVisit: 'Visit us', navBook: 'Book appointment', bookingTitle: 'Find a dentist.<br><em>Find your next step.</em>', bookingLead: 'Tell us what you need and we’ll help you choose the right kind of care.', careLabel: '02 / Our care', careTitle: 'Clear care for<br><em>real life.</em>', careIntro: 'From prevention to precision treatment, your plan starts with listening. Search a concern below or choose a specialty to learn more.', searchLabel: 'Search a dental concern', searchPlaceholder: 'Try “toothache”, “braces”, or “missing tooth”', galleryLabel: '05 / Inside the clinic', galleryTitle: 'A real place.<br><em>Ready for you.</em>', galleryIntro: 'See the rooms, equipment, entrance and people behind your care. These are photographs from Bhoomika Dental Clinic in Badami.', doctorLabel: '06 / Your clinician', hoursLabel: '07 / Find us', conditionsLabel: '04 / Understand your mouth', conditionsTitle: 'Oral health,<br><em>from A to Z.</em>', conditionsIntro: 'A calm starting point for common symptoms, conditions and care questions. Browse a letter or search a topic — this is education, not a diagnosis.', conditionsCta: 'Talk to the clinic <span aria-hidden="true">↗</span>', conditionsSearch: 'Search Aphthous ulcer, gum bleeding, dry mouth…' },
@@ -29,6 +32,23 @@ function collectForm(form) {
   return Object.fromEntries(new FormData(form).entries());
 }
 
+function initEmailJS() {
+  if (window.emailjs) window.emailjs.init({ publicKey: EMAILJS_PUBLIC_KEY });
+}
+
+function sendAppointmentEmail() {
+  if (!window.emailjs) throw new Error('EmailJS client unavailable');
+  const emailPayload = {
+    patient_name: document.getElementById('patientName').value,
+    patient_phone: document.getElementById('patientPhone').value,
+    patient_email: document.getElementById('patientEmail').value,
+    care_area: document.getElementById('careArea').value,
+    preferred_date: document.getElementById('preferredDate').value,
+    preferred_time: document.getElementById('preferredTime').value
+  };
+  return window.emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, emailPayload);
+}
+
 function initNavigation() {
   const toggle = $('.menu-toggle');
   const nav = $('#site-nav');
@@ -39,7 +59,7 @@ function initNavigation() {
   $$('[data-scroll]').forEach((button) => button.addEventListener('click', () => $(button.dataset.scroll)?.scrollIntoView({ behavior: 'smooth' })));
   $$('[data-open-booking]').forEach((button) => button.addEventListener('click', () => {
     $('#booking-panel')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    setTimeout(() => $('#patient_name')?.focus(), 450);
+    setTimeout(() => $('#patientName')?.focus(), 450);
   }));
 }
 
@@ -70,13 +90,13 @@ function initHeroMedia() {
 }
 
 function selectSpecialty(value) {
-  const select = $('#specialty');
+  const select = $('#careArea');
   if (!select) return;
   const option = [...select.options].find((candidate) => candidate.value.toLowerCase() === value.toLowerCase() || candidate.text.toLowerCase().includes(value.toLowerCase()));
   if (option) select.value = option.value;
   $$('.specialty-card').forEach((card) => card.classList.toggle('is-selected', card.dataset.specialty === value));
   $('#booking-panel')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-  setTimeout(() => $('#patient_name')?.focus(), 450);
+  setTimeout(() => $('#patientName')?.focus(), 450);
   setStatus($('#booking-status'), `${value} selected — tell us your name and phone number to request a visit.`);
 }
 
@@ -107,8 +127,9 @@ function initBooking() {
   const form = $('#booking-form');
   const status = $('#booking-status');
   const workflow = $('#workflow_type');
-  const specialty = $('#specialty');
-  const specialtyLabel = $('label[for="specialty"]');
+  const specialty = $('#careArea');
+  const specialtyLabel = $('label[for="careArea"]');
+  const confirmation = $('#booking-confirmation');
   const appointmentOptions = ['Dental X-Ray', 'Implants, Dentures, Crowns & Bridges', 'Orthodontic Braces Treatment', 'Teeth Scaling & Bleaching', 'Smile Design & Veneering', 'Dental Filling', 'Root Canal Treatment (RCT)', 'Extraction & Impaction Surgery'];
   const screeningOptions = ['Routine Cleaning', 'Deep Scaling or Root Planing', "Kids' Dental Preventive", 'Senior Oral Care'];
   const updateCareOptions = () => {
@@ -125,12 +146,20 @@ function initBooking() {
     const payload = { ...collectForm(form), submitted_at: new Date().toISOString(), language: currentLanguage, source: 'website-booking-form' };
     const isPreventive = payload.workflow_type === 'preventive_screening';
     setStatus(status, isPreventive ? 'Sending your preventive screening request…' : 'Sending your appointment request…');
+    if (confirmation) confirmation.hidden = true;
     try {
       await postWebhook(APPOINTMENT_WEBHOOK, payload);
+      await sendAppointmentEmail();
       setStatus(status, 'Thank you — your request is on its way to the clinic. We’ll be in touch shortly.', 'success');
+      if (confirmation) {
+        confirmation.hidden = false;
+        confirmation.textContent = 'Request received. Your details have reached Dr. Lata’s clinic team — we’ll contact you at the email or phone number you provided.';
+      }
       form.reset();
     } catch (error) {
-      setStatus(status, 'We could not send that just now. Please call +91 9481731482 and we’ll help you directly.', 'error');
+      if (confirmation) confirmation.hidden = false;
+      if (confirmation) confirmation.textContent = 'We could not complete the email confirmation. Please call +91 9481731482 so the clinic can help you directly.';
+      setStatus(status, 'Your request could not be fully sent just now. Please call +91 9481731482.', 'error');
     }
   });
 }
@@ -267,7 +296,7 @@ function initVoice() {
     const spoken = prompt.toLowerCase();
     const matched = Object.entries(knowledge?.specialties || {}).find(([term]) => spoken.includes(term));
     if (matched) selectSpecialty(matched[1]);
-    else if (spoken.includes('appointment') || spoken.includes('book')) { $('#booking-panel')?.scrollIntoView({ behavior: 'smooth', block: 'center' }); setTimeout(() => $('#patient_name')?.focus(), 450); }
+    else if (spoken.includes('appointment') || spoken.includes('book')) { $('#booking-panel')?.scrollIntoView({ behavior: 'smooth', block: 'center' }); setTimeout(() => $('#patientName')?.focus(), 450); }
     lastAnswer = await askAssistant(prompt); answer.textContent = lastAnswer; speak(lastAnswer);
   };
   ask?.addEventListener('click', () => { const prompt = question.value.trim(); if (prompt) { question.value = ''; handlePrompt(prompt); } });
@@ -286,5 +315,5 @@ function initVoice() {
 }
 
 async function loadDisorders() { try { disorders = await fetch('oral-disorders.json').then((response) => response.json()); } catch { disorders = []; } }
-async function boot() { initNavigation(); initHeroMedia(); initLanguage(); initBooking(); initCallback(); initFeedback(); initSpecialtyCards(); await Promise.all([loadKnowledge(), loadDisorders()]); initSearch(); initConditions(); initVoice(); }
+async function boot() { initEmailJS(); initNavigation(); initHeroMedia(); initLanguage(); initBooking(); initCallback(); initFeedback(); initSpecialtyCards(); await Promise.all([loadKnowledge(), loadDisorders()]); initSearch(); initConditions(); initVoice(); }
 boot();
