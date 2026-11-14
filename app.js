@@ -4,6 +4,7 @@ const KNOWLEDGE_URL = 'clinic-knowledge.json';
 const EMAILJS_PUBLIC_KEY = '4F8rvg3HsYXpJ3NTa';
 const EMAILJS_SERVICE_ID = 'service_oz00kf3';
 const EMAILJS_TEMPLATE_ID = 'p__ejs-test-mail-service__';
+const CLINIC_PHONE = '919481731482';
 
 const translations = {
   en: { kicker: 'Compassionate dental care, close to home', heroTitle: 'Care that feels close,', heroAccent: 'smiles that move with you.', heroLead: 'A calm, clear dental experience for every age — from your first check-up to the confidence of a healthier smile.', heroCta: 'Find your next step', heroExplore: 'Explore our care', navCare: 'Our care', navDoctor: 'Meet Dr. Lata', navVisit: 'Visit us', navBook: 'Book appointment', bookingTitle: 'Find a dentist.<br><em>Find your next step.</em>', bookingLead: 'Tell us what you need and we’ll help you choose the right kind of care.', careLabel: '02 / Our care', careTitle: 'Clear care for<br><em>real life.</em>', careIntro: 'From prevention to precision treatment, your plan starts with listening. Search a concern below or choose a specialty to learn more.', searchLabel: 'Search a dental concern', searchPlaceholder: 'Try “toothache”, “braces”, or “missing tooth”', galleryLabel: '05 / Inside the clinic', galleryTitle: 'A real place.<br><em>Ready for you.</em>', galleryIntro: 'See the rooms, equipment, entrance and people behind your care. These are photographs from Bhoomika Dental Clinic in Badami.', doctorLabel: '06 / Your clinician', hoursLabel: '07 / Find us', conditionsLabel: '04 / Understand your mouth', conditionsTitle: 'Oral health,<br><em>from A to Z.</em>', conditionsIntro: 'A calm starting point for common symptoms, conditions and care questions. Browse a letter or search a topic — this is education, not a diagnosis.', conditionsCta: 'Talk to the clinic <span aria-hidden="true">↗</span>', conditionsSearch: 'Search Aphthous ulcer, gum bleeding, dry mouth…' },
@@ -28,8 +29,40 @@ async function postWebhook(url, payload) {
   return fetch(url, { method: 'POST', mode: 'cors', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload), keepalive: true });
 }
 
+async function submitAppointment(payload) {
+  const response = await fetch('/api/appointment', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+    keepalive: true
+  });
+  if (response.ok) return response.json();
+  if (response.status !== 404 && response.status !== 503) throw new Error('Appointment automation failed.');
+  // Keep the existing live webhook as a safe fallback while clinic credentials are configured.
+  const fallback = await postWebhook(APPOINTMENT_WEBHOOK, payload);
+  if (!fallback.ok) throw new Error('Appointment delivery failed.');
+  return { ok: true, fallback: true };
+}
+
 function collectForm(form) {
-  return Object.fromEntries(new FormData(form).entries());
+  const data = Object.fromEntries(new FormData(form).entries());
+  const files = $('#patient_files', form)?.files;
+  if (files?.length) data.attachment_names = [...files].map((file) => file.name);
+  delete data.patient_files;
+  return data;
+}
+
+function buildWhatsAppUrl(payload) {
+  const lines = [
+    'Bhoomika Dental Clinic appointment request',
+    `Name: ${payload.patient_name || ''}`,
+    `Phone: ${payload.patient_phone || ''}`,
+    `Email: ${payload.patient_email || ''}`,
+    `Care: ${payload.specialty || ''}`,
+    `Preferred: ${payload.preferred_date || 'Flexible'} ${payload.preferred_time || ''}`,
+    `Concern: ${payload.dental_concern || 'Not specified'}`
+  ];
+  return `https://wa.me/${CLINIC_PHONE}?text=${encodeURIComponent(lines.join('\n'))}`;
 }
 
 function initEmailJS() {
@@ -140,6 +173,11 @@ function initBooking() {
   };
   workflow?.addEventListener('change', updateCareOptions);
   updateCareOptions();
+  $('#booking-whatsapp')?.addEventListener('click', () => {
+    if (!form.reportValidity()) return;
+    const payload = { ...collectForm(form), workflow_type: workflow?.value || 'appointment' };
+    window.open(buildWhatsAppUrl(payload), '_blank', 'noopener,noreferrer');
+  });
   form?.addEventListener('submit', async (event) => {
     event.preventDefault();
     if (!form.reportValidity()) return;
@@ -148,8 +186,8 @@ function initBooking() {
     setStatus(status, isPreventive ? 'Sending your preventive screening request…' : 'Sending your appointment request…');
     if (confirmation) confirmation.hidden = true;
     try {
-      await postWebhook(APPOINTMENT_WEBHOOK, payload);
-      await sendAppointmentEmail();
+const automation = await submitAppointment(payload);
+      if (!automation.email_configured) await sendAppointmentEmail();
       setStatus(status, 'Thank you — your request is on its way to the clinic. We’ll be in touch shortly.', 'success');
       if (confirmation) {
         confirmation.hidden = false;
