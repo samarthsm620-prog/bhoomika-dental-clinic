@@ -11,3 +11,16 @@
 /* Clinic-specific polish: full-bleed authentic photo slides and clear AI state. */
 .hero-stage .hero-slide{padding:24px 24px 56px;overflow:hidden;isolation:isolate}.hero-stage .hero-slide img{position:absolute;inset:0;z-index:-2;width:100%;height:100%;object-fit:cover;object-position:center 42%;border:0;border-radius:0;box-shadow:none}.hero-stage .hero-slide::after{content:"";position:absolute;inset:0;z-index:-1;background:linear-gradient(180deg,rgba(7,25,53,.04) 10%,rgba(7,25,53,.20) 46%,rgba(7,25,53,.82) 100%);pointer-events:none}.hero-stage .hero-slide div{position:relative;z-index:1;max-width:72%;text-shadow:0 2px 12px rgba(0,0,0,.35)}.hero-stage .hero-slide span{font-size:10px}.hero-stage .hero-slide strong{font-size:clamp(16px,1.55vw,21px)}.hero-stage .hero-slide-controls{z-index:5}.gemini-mark{display:inline-flex;vertical-align:middle;width:17px;height:17px;margin-right:5px;color:#7b5cff}.gemini-mark svg{display:block;width:100%;height:100%;fill:currentColor}.voice-fab .gemini-mark{width:17px;height:17px;margin:0;color:#f6ce62}.voice-mode{padding:9px 11px;border-radius:10px;background:#f5f6fb;color:#52627a;font-size:12px;line-height:1.45}.voice-mode[data-state="online"]{background:#e6f6ee;color:#1b7048}.voice-mode[data-state="offline"]{background:#fff4e4;color:#815719}.voice-mode[data-state="checking"]{background:#f0edff;color:#5440a3}.privacy-consent{display:flex;align-items:flex-start;gap:10px;margin:8px 0 14px;color:#52627a;font-size:12px;line-height:1.5}.privacy-consent input{flex:0 0 auto;width:17px;height:17px;margin:1px 0 0;accent-color:#173a68}.privacy-consent .required{color:#b83232}.honeypot{position:absolute!important;left:-10000px!important;width:1px!important;height:1px!important;overflow:hidden!important}.checkup-form fieldset label span{display:inline-block}.checkup-result p{line-height:1.55}
 @media(max-width:720px){.hero-stage .hero-slide{padding:16px 16px 48px}.hero-stage .hero-slide div{max-width:80%}.hero-stage .hero-slide strong{font-size:15px}}
+
+/* Tablet-width hero: restore readable headline measure and keep intake beside media. */
+@media (min-width: 721px) and (max-width: 1020px){
+  .hero-stage{padding:68px 20px 60px}
+  .hero-inner{grid-template-columns:minmax(0,1fr);gap:34px;max-width:820px}
+  .hero-stage .hero-copy{max-width:none}
+  .hero-stage h1{max-width:760px;font-size:clamp(50px,7vw,68px)}
+  .hero-stage .hero-lede{max-width:680px}
+  .hero-stage .trust-strip{margin-top:34px}
+  .hero-card-wrap{grid-template-columns:minmax(0,.92fr) minmax(0,1.08fr);align-items:start}
+  .hero-stage .hero-media{height:295px;min-height:295px}
+  .hero-stage .booking-card{padding:24px}
+}
