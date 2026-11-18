@@ -1,36 +1,33 @@
 # Bhoomika Dental Clinic
 
-Accessible bilingual dental clinic landing page for Bhoomika Dental Clinic, Badami.
+A responsive, bilingual clinic website for Dr. Lata H. Teredal, BDS, at TMC Complex, Badami. The client is vanilla JavaScript with local CSS Grid layouts; appointment, Gemini, and notification services run through Cloudflare Pages Functions.
 
-## Run locally
+## Local preview
+
+For a static visual preview, run:
 
 ```bash
 python3 -m http.server 3000
 ```
 
-Open `http://localhost:3000`.
+Open `http://localhost:3000`. Pages Functions require Wrangler to preview; see the Cloudflare Pages documentation and the integration setup guide in [`google-sheets/README.md`](google-sheets/README.md).
 
-## Webhook integration
+## Cloudflare Pages deployment
 
-The browser posts text/plain JSON to the configured Manus Trigger webhooks:
+The Git-connected Cloudflare Pages project is `bhoomika-dental-clinic`, sourced from `samarthsm620-prog/bhoomika-dental-clinic` on `main`. The project serves the repository root (`.`) and discovers the root `functions/` directory automatically. Do not use `wrangler deploy` for this Pages project; that command targets Workers and can omit Pages Functions. Pushes to `main` are intended to deploy automatically.
 
-- Appointment and preventive screening: `workflow_type` is `appointment` or `preventive_screening`.
-- Callback triage: sticky callback form payload.
+The live Pages URL is `https://bhoomika-dental-clinic.pages.dev`. A custom domain is optional and should only be configured after the clinic owner selects and purchases one.
 
-The webhook constants live at the top of `app.js`.
+## Appointment flow
 
-## Optional Gemini assistant
+`POST /api/appointment` validates the request on Cloudflare, requires an explicit consent checkbox, filters spam honeypot submissions, and sends data to configured integrations. It can append an idempotent row to a private Google Sheet through the server-side Apps Script webhook and send separate clinic and patient emails through one EmailJS template. The patient email is a receipt, not an appointment confirmation, and includes general urgent-care guidance. The existing WhatsApp click-to-open and callback paths remain available. The form does not upload attached X-rays or reports; patients are asked to bring them or share them after clinic contact.
 
-The browser calls `/api/gemini` when the endpoint is available. On Cloudflare Pages, set the encrypted `GEMINI_API_KEY` environment variable and deploy the included `functions/api/gemini.js`. Without the key or endpoint, the assistant still works with Web Speech API and local dental intent matching.
+Configure production secrets in Cloudflare Pages using the variable names in `.env.example`. Follow [`google-sheets/README.md`](google-sheets/README.md) for the exact Apps Script properties, email template variables, and deployment steps. Never commit API keys, shared tokens, patient data, or deployed webhook URLs.
 
-## Cloudflare Pages
+## Gemini assistant
 
-Use this repository as a Pages project with the project root as the build directory. The site is static; the Pages Function in `functions/` is deployed automatically. No build command is required.
+The browser calls the `/api/gemini` Pages Function using the currently listed `gemini-3.5-flash-lite` model ([official model list](https://ai.google.dev/gemini-api/docs/models)). `GEMINI_API_KEY` must be set as an encrypted Pages secret. If Gemini is unavailable, the assistant clearly says it is showing local clinic facts instead. The clinic-knowledge rules prohibit symptom diagnosis or recommending a procedure from symptoms alone.
 
-The repository also includes `Dockerfile` and `server.mjs` for the managed hybrid deployment used by the project preview. The container exposes `/_app/health` and keeps `GEMINI_API_KEY` server-side.
+## Media and accessibility
 
-Photo sources and the local asset mapping are documented in `ASSET_SOURCES.md`. The current images are illustrative; replace them with clinic-owned photos when available.
-
-## Privacy
-
-Do not commit patient records, API keys, or production secrets. The client validates required fields but production systems should also apply server-side validation, retention, consent, and access controls.
+The hero carousel uses the clinic's own treatment-room, clinician, and exterior photos. The existing background videos are preserved. User-provided infographics containing non-local or third-party claims are not presented as clinic facts. The site includes an English/Kannada toggle, keyboard focus states, reduced-motion behavior, landmarks, labels, and status announcements.
