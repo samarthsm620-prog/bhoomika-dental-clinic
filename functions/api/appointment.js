@@ -26,6 +26,7 @@ function safePayload(input) {
   };
   const payload = Object.fromEntries(Object.entries(fields).map(([key, max]) => [key, clean(input?.[key], max)]));
   payload.consent = input?.consent === true || ['true', 'yes', 'on'].includes(String(input?.consent || '').toLowerCase());
+  payload.sms_opt_in = input?.sms_opt_in === true || ['true', 'yes', 'on'].includes(String(input?.sms_opt_in || '').toLowerCase());
   payload.request_id = clean(input?.request_id, 80) || crypto.randomUUID();
   payload.submitted_at = clean(input?.submitted_at, 40) || new Date().toISOString();
   return payload;
@@ -108,6 +109,42 @@ async function sendEmailNotifications(payload, env) {
   return { configured: true, clinic_sent: clinicSent, patient_sent: patientSent };
 }
 
+function normalizeMsg91Mobile(value) {
+  const digits = String(value || '').replace(/\D/g, '');
+  if (digits.length === 10) return `91${digits}`;
+  if (digits.length === 11 && digits.startsWith('0')) return `91${digits.slice(1)}`;
+  if (digits.length === 12 && digits.startsWith('91')) return digits;
+  if (String(value || '').trim().startsWith('+') && digits.length >= 8 && digits.length <= 15) return digits;
+  return '';
+}
+
+async function sendAppointmentSms(payload, env) {
+  if (!payload.sms_opt_in) return { configured: false, sent: false, status: 'not_opted_in' };
+  if (!env.MSG91_AUTH_KEY || !env.MSG91_TEMPLATE_ID) return { configured: false, sent: false, status: 'not_configured' };
+  const mobile = normalizeMsg91Mobile(payload.patient_phone);
+  if (!mobile) return { configured: true, sent: false, status: 'invalid_number' };
+
+  const flowPayload = {
+    template_id: env.MSG91_TEMPLATE_ID,
+    short_url: '0',
+    realTimeResponse: '1',
+    recipients: [{ mobiles: mobile }]
+  };
+
+  try {
+    const response = await fetch('https://control.msg91.com/api/v5/flow', {
+      method: 'POST',
+      headers: { accept: 'application/json', authkey: env.MSG91_AUTH_KEY, 'content-type': 'application/json' },
+      body: JSON.stringify(flowPayload)
+    });
+    const result = await response.json().catch(() => null);
+    const sent = response.ok && String(result?.type || '').toLowerCase() === 'success';
+    return { configured: true, sent, status: sent ? 'sent' : 'failed' };
+  } catch {
+    return { configured: true, sent: false, status: 'failed' };
+  }
+}
+
 async function logToSheets(payload, env) {
   if (!env.GOOGLE_SHEETS_WEBHOOK_URL || !env.GOOGLE_SHEETS_SHARED_SECRET) {
     return { configured: false };
@@ -161,15 +198,18 @@ export async function onRequestPost({ request, env }) {
   const email = outcomes[0].status === 'fulfilled' ? outcomes[0].value : { configured: false, clinic_sent: false, patient_sent: false };
   const sheets = outcomes[1].status === 'fulfilled' ? outcomes[1].value : { configured: false };
   const webhook = outcomes[2].status === 'fulfilled' ? outcomes[2].value : { configured: false };
-  const configured = [email.configured, sheets.configured, webhook.configured].filter(Boolean).length;
+  const configured = [email.clinic_sent, sheets.configured, webhook.configured].filter(Boolean).length;
 
   if (configured === 0) return json({ error: 'Appointment routing is not configured.' }, 503);
+  const sms = await sendAppointmentSms(payload, env);
   return json({
     ok: true,
     request_id: payload.request_id,
     email_configured: Boolean(email.clinic_sent && email.patient_sent),
     email_status: email.configured ? (email.clinic_sent && email.patient_sent ? 'sent' : 'partial') : 'not_configured',
     sheets_logged: Boolean(sheets.configured),
+    sms_status: sms.status,
+    sms_sent: Boolean(sms.sent),
     message: 'Appointment request received.'
   });
 }

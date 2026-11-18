@@ -12,10 +12,12 @@
 
 ## Live integration status (2026-11-18)
 
-- [x] Cloudflare production contains encrypted variable names `EMAILJS_SERVICE_ID`, `EMAILJS_TEMPLATE_ID`, `EMAILJS_PUBLIC_KEY`, and `CLINIC_EMAIL`. Their values are intentionally not exposed; actual EmailJS template validity and delivery have not been tested.
-- [ ] Confirm EmailJS service/template bindings in EmailJS and send one synthetic test to a controlled inbox. Do not use real patient data.
+- [x] Cloudflare production contains encrypted variable names `EMAILJS_SERVICE_ID`, `EMAILJS_TEMPLATE_ID`, `EMAILJS_PUBLIC_KEY`, and `CLINIC_EMAIL`. Their values are intentionally not exposed.
+- [ ] Resolve EmailJS delivery: two synthetic production tests returned HTTP 200 with `email_status: partial`; check the clinic inbox and EmailJS template/activity dashboard. The endpoint does not reveal which recipient send succeeded.
 - [ ] Deploy `google-sheets/Code.gs`, set Apps Script properties `SHEET_ID` and `WEBHOOK_TOKEN`, then add production secrets `GOOGLE_SHEETS_WEBHOOK_URL` and `GOOGLE_SHEETS_SHARED_SECRET` in Cloudflare. The Cloudflare Pages project currently lacks both bindings, so website appointment logging to `Bookings` is not active. Any separate callback/triage sheet is not proof that this appointment-sheet route works.
 - [ ] Add `GEMINI_API_KEY` as a Cloudflare Pages production secret. A generic live dental-sensitivity inquiry currently returns HTTP 503 `Gemini proxy is not configured`; no Gemini answer was produced.
+- [ ] Deploy the optional, unchecked SMS-consent control and opt-in-gated MSG91 Pages Function. The Apps Script now records a separate yes/no SMS opt-in; existing `Bookings` sheets need the final `SMS opt-in` header and a newly deployed Apps Script version.
+- [ ] Configure MSG91 production secrets `MSG91_AUTH_KEY` and `MSG91_TEMPLATE_ID`, with the matching approved DLT sender and content template. SMS must only be tested with an explicitly opted-in controlled phone.
 - [ ] After Sheets and EmailJS are fully configured, run one clearly synthetic appointment test; verify the `Bookings` row and both email notifications, then remove the test row/message.
 
 ## Deployment notes

@@ -3,7 +3,7 @@ const MAX_PAYLOAD_CHARS = 10000;
 const EXPECTED_HEADERS = [
   'Request ID', 'Submitted at (UTC)', 'Request type', 'Patient name', 'Patient email',
   'Phone', 'Requested care', 'Preferred date', 'Preferred time',
-  'Patient note', 'Language', 'Source', 'Consent recorded'
+  'Patient note', 'Language', 'Source', 'Consent recorded', 'SMS opt-in'
 ];
 
 /** Public receiver: credentials remain in Script Properties; never log them. */
@@ -28,6 +28,7 @@ function doPost(e) {
   const specialty = clean_(data.specialty, 120);
   const workflow = clean_(data.workflow_type, 40);
   const consent = data.consent === true || ['true', 'yes', 'on'].indexOf(String(data.consent || '').toLowerCase()) >= 0;
+  const smsOptIn = data.sms_opt_in === true || ['true', 'yes', 'on'].indexOf(String(data.sms_opt_in || '').toLowerCase()) >= 0;
   if (name.length < 2 || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || phone.replace(/\D/g, '').length < 7 || !specialty || !['appointment', 'preventive_screening'].includes(workflow) || !consent) {
     return json_({ ok: false, error: 'invalid_fields' });
   }
@@ -48,7 +49,8 @@ function doPost(e) {
     clean_(data.dental_concern, 700),
     clean_(data.language, 8),
     clean_(data.source, 64),
-    'yes'
+    'yes',
+    smsOptIn ? 'yes' : 'no'
   ].map(sheetSafe_);
 
   const lock = LockService.getScriptLock();
