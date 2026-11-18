@@ -1,26 +1,36 @@
 # Appointment notifications and Google Sheets logging
 
-This site submits the appointment form to a Cloudflare Pages Function. EmailJS credentials and the Google Sheets shared token stay server-side; the browser never receives them. The clinic sheet should remain private and must not be shared publicly.
+This site sends appointment requests to a same-origin Cloudflare Pages Function. EmailJS and Sheets values are read only by that server-side Function; they are not embedded in frontend JavaScript. Keep the clinic spreadsheet private.
 
 ## Google Sheets webhook
 
-1. In the clinic-owned Google Sheet, use a tab named `Bookings` with these existing columns in row 1, in order: `Request ID`, `Submitted at (UTC)`, `Request type`, `Patient name`, `Patient email`, `Phone`, `Requested care`, `Preferred date`, `Preferred time`, `Patient note`, `Language`, `Source`, `Consent recorded`. The receiver checks this exact order before appending and does not overwrite the header.
+1. Use the clinic-owned spreadsheet and a tab named `Bookings`. Row 1 must contain, in this order: `Request ID`, `Submitted at (UTC)`, `Request type`, `Patient name`, `Patient email`, `Phone`, `Requested care`, `Preferred date`, `Preferred time`, `Patient note`, `Language`, `Source`, `Consent recorded`. The receiver checks these headers and does not overwrite them.
 2. Open **Extensions → Apps Script** (or the clinic's standalone Apps Script project), paste `Code.gs`, and save it.
-3. In **Project Settings → Script Properties**, set `SHEET_ID` to the clinic spreadsheet ID and `WEBHOOK_TOKEN` to a long, randomly generated secret. Do not add either value to GitHub.
-4. Deploy the script as a **Web app**, execute as the clinic owner, and permit public access only because the patient form calls it without a Google login. The script checks `WEBHOOK_TOKEN` before writing; keep the spreadsheet itself private.
-5. Copy the deployed `/exec` URL to Cloudflare Pages as `GOOGLE_SHEETS_WEBHOOK_URL`. Set the same random token as the encrypted `GOOGLE_SHEETS_SHARED_SECRET` Pages secret. Do not expose the token in frontend JavaScript.
-6. A successful booking appends one row. `request_id` makes retries idempotent, so a network retry will not create duplicate entries.
+3. In **Project Settings → Script Properties**, set `SHEET_ID` to that spreadsheet's ID and `WEBHOOK_TOKEN` to a long random token. Do not commit either value to GitHub.
+4. Select **Deploy → New deployment → Web app**. Set **Execute as** to the clinic owner. Set access to **Anyone** so the site can reach the endpoint without a Google login. The receiver validates `WEBHOOK_TOKEN`; do not make the spreadsheet public.
+5. Copy the deployed web-app URL ending in `/exec`. Do not use the editor's `/dev` URL.
+
+## Add the Cloudflare Pages production secrets
+
+1. Open the [Cloudflare dashboard](https://dash.cloudflare.com/?to=/:account/workers-and-pages), choose **Workers & Pages**, then select the Pages project **`bhoomika-dental-clinic`**.
+2. Open **Settings → Variables and Secrets → Add**. Choose the **Production** environment. Do not add a production clinic secret only to Preview.
+3. Add `GOOGLE_SHEETS_WEBHOOK_URL` with the deployed Apps Script `/exec` URL. Choose **Secret** to keep the endpoint private in the dashboard.
+4. Add `GOOGLE_SHEETS_SHARED_SECRET` as a **Secret**. Its value must exactly match the Apps Script `WEBHOOK_TOKEN` property.
+5. If live Gemini replies are wanted, add `GEMINI_API_KEY` as a **Secret** using a key from the clinic's Google AI Studio account.
+6. Save the changes. If Cloudflare asks for deployment, deploy them. Otherwise open **Deployments**, retry the latest production deployment, and wait for initialize, build, and deploy to succeed. Verify the commit is the current GitHub `main` branch commit.
+
+The current appointment Function expects these exact names: `GOOGLE_SHEETS_WEBHOOK_URL`, `GOOGLE_SHEETS_SHARED_SECRET`, `GEMINI_API_KEY`. Do not rename them. Never paste secret values into chat, source files, or GitHub.
 
 ## EmailJS notifications
 
-Create an EmailJS email service and one template. Configure the template's **To email** as `{{to_email}}`, **Subject** as `{{email_subject}}`, **Reply-To** as `{{reply_to}}`, and include `{{recipient_name}}`, `{{message_body}}`, and `{{patient_first_aid}}` in the body. The Pages Function sends the same template twice: a structured clinic alert to `CLINIC_EMAIL` and a receipt to the patient's submitted address. The patient receipt says the request is not yet a confirmed appointment and includes general urgent-care guidance; it is not a diagnosis or emergency service.
+Create an EmailJS email service connected to the clinic's chosen mailbox. In EmailJS, create or update one template with **To email** `{{to_email}}`, **Subject** `{{email_subject}}`, and **Reply-To** `{{reply_to}}`. Include `{{recipient_name}}`, `{{message_body}}`, and `{{patient_first_aid}}` in its body. The Pages Function sends this template twice: a structured alert to the clinic and a receipt to the patient's submitted address. The receipt states that the request is not a confirmed appointment and includes general urgent-care guidance; it is not a diagnosis or emergency service.
 
-Set these Cloudflare Pages environment variables/secrets: `EMAILJS_SERVICE_ID`, `EMAILJS_TEMPLATE_ID`, `EMAILJS_PUBLIC_KEY`, and `CLINIC_EMAIL`. The clinic recipient address must be confirmed by the clinic owner; do not assume the Cloudflare account email is the doctor's notification address. Test with an address you control before switching to the clinic's live inbox.
+The Cloudflare Pages project requires `EMAILJS_SERVICE_ID`, `EMAILJS_TEMPLATE_ID`, `EMAILJS_PUBLIC_KEY`, and the clinic-approved `CLINIC_EMAIL`. As of 2026-11-18, those four names are present as encrypted production secrets. Their values and actual EmailJS delivery have not been independently verified. Confirm the template bindings and clinic recipient in EmailJS before using live patient bookings. Do not assume the Cloudflare account email is the doctor's notification address.
 
 ## Gemini assistant
 
-Set `GEMINI_API_KEY` as an encrypted Cloudflare Pages secret. The website uses the `/api/gemini` Pages Function; it falls back to local, clinic-facts-only answers when Gemini is unavailable and displays that state in the assistant panel.
+The `/api/gemini` Pages Function requires `GEMINI_API_KEY`. The site has a clinic-facts-only local fallback when Gemini is unavailable. A `503` response means the production secret is absent; `502` means the upstream Gemini request failed. After adding the key and deploying, test the endpoint with a generic, non-emergency question.
 
-## Deployment and smoke test
+## Safe smoke test
 
-Cloudflare Pages is connected to the GitHub `main` branch. After updating source, wait for the production build to complete, then verify the hero images, both language states, `/api/gemini`, and the booking endpoint. Do not submit real patient information as a test. Use clearly synthetic test data and remove the test row/email after verifying delivery.
+After the Apps Script endpoint and both Sheets values are configured, use clearly synthetic booking data and an email inbox you control. Confirm the sheet row and both EmailJS messages, then remove the test row. Do not submit real patient information as a test. The Sheets append uses `request_id` to avoid duplicate rows on retries.

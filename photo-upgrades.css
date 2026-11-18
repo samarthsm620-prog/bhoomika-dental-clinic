@@ -29,3 +29,8 @@
 .hero-stage{display:block}
 .hero-stage>.hero-inner.shell{width:min(1180px,calc(100vw - 40px));margin-inline:auto}
 @media(max-width:720px){.hero-stage>.hero-inner.shell{width:100%}}
+
+/* Prevent story photography's intrinsic width from expanding the responsive page. */
+.care-story,.story-image{min-width:0}
+.story-image{overflow:hidden}
+.story-image img{display:block;width:100%;max-width:100%;height:auto}
