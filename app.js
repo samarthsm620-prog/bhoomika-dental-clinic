@@ -82,6 +82,25 @@ function sendAppointmentEmail() {
   return window.emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, emailPayload);
 }
 
+function sendCallbackEmail(payload) {
+  if (!window.emailjs) throw new Error('EmailJS client unavailable');
+  return window.emailjs.send(EMAILJS_SERVICE_ID, EMAILJS_TEMPLATE_ID, {
+    patient_name: payload.name || '',
+    patient_phone: payload.phone || '',
+    patient_email: '',
+    care_area: 'Callback request',
+    preferred_date: '',
+    preferred_time: '',
+    workflow_type: 'callback_triage',
+    callback_name: payload.name || '',
+    callback_phone: payload.phone || '',
+    callback_concern: payload.concern || '',
+    submitted_at: payload.submitted_at || '',
+    source: payload.source || 'sticky-callback-row',
+    language: payload.language || currentLanguage
+  });
+}
+
 function initNavigation() {
   const toggle = $('.menu-toggle');
   const nav = $('#site-nav');
@@ -264,7 +283,9 @@ function initCallback() {
     const payload = { ...collectForm(form), submitted_at: new Date().toISOString(), source: 'sticky-callback-row', language: currentLanguage };
     try {
       await postWebhook(CALLBACK_WEBHOOK, payload);
-      setStatus(status, 'Received — the clinic will call you back soon.', 'success');
+      let emailSent = true;
+      try { await sendCallbackEmail(payload); } catch { emailSent = false; }
+      setStatus(status, emailSent ? 'Received — the clinic will call you back soon.' : 'Received — your callback was logged, but the clinic email notification could not be sent.', emailSent ? 'success' : 'error');
       form.reset();
     } catch (error) {
       setStatus(status, 'Please call +91 9481731482 directly.', 'error');
