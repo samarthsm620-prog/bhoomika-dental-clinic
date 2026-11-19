@@ -52,7 +52,7 @@ async function sendEmail(env, templateParams) {
   if (!serviceId || !templateId || !publicKey) return false;
   const response = await fetch('https://api.emailjs.com/api/v1.0/email/send', {
     method: 'POST',
-    headers: { 'content-type': 'application/json' },
+    headers: { 'content-type': 'application/json', origin: SITE_ORIGIN, referer: `${SITE_ORIGIN}/` },
     body: JSON.stringify({ service_id: serviceId, template_id: templateId, user_id: publicKey, template_params: templateParams })
   });
   return response.ok;
