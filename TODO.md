@@ -1,32 +1,32 @@
 # Bhoomika Dental Clinic — Delivery Status
 
-## Implemented in source
+## Verified in current source and deployment work
 
 - [x] Responsive clinic homepage, English/Kannada toggle, booking panel, specialty cards, clinician profile, hours/location, self-check, callback flow, and accessible live status controls.
-- [x] Real clinic photos in the hero and gallery; existing looping background videos remain intact.
-- [x] Patient email field, explicit appointment-data consent, file-privacy note, request validation, spam honeypot, and WhatsApp request-letter flow.
-- [x] Same-origin Cloudflare Pages Function for appointment validation and server-side Sheets/EmailJS routing.
-- [x] Google Apps Script receiver source that validates the shared token, matches the existing `Bookings` header row, records consent, locks append operations, and avoids duplicate request IDs.
-- [x] Two-recipient EmailJS sender source: structured clinic alert and patient receipt with general urgent-care guidance.
-- [x] Gemini Pages Function, verified current model name, clinic-specific rules, and local fallback state when the secret is not configured.
-- [x] Deployment/readme documentation and no real credentials committed to source.
+- [x] Real clinic photos and videos, unique image alt text, compressed raster assets, favicon, web manifest, and social preview image.
+- [x] Patient email field, explicit appointment-data consent, optional SMS consent, file-privacy note, validation, appointment honeypot, callback honeypot, and WhatsApp request-letter flow.
+- [x] Same-origin Cloudflare Pages Functions for appointment validation, server-side Sheets/EmailJS routing, optional MSG91 SMS routing, and Gemini proxy.
+- [x] Crawler-visible metadata, canonical URL, JSON-LD clinic identity, sitemap.xml, robots.txt, AI search-bot access, clean URL redirects, custom noindex 404 page, privacy policy, terms page, cookie consent, HSTS, and browser security headers.
+- [x] Stale generated `dist` bundle removed so old provider identifiers are not publicly exposed; provider secrets remain server-side.
+- [x] GitHub `main` is connected to Cloudflare Pages with repository-root output and a no-build command.
 
-## Required owner setup before an end-to-end email/Sheets test
+## Live integration status
 
-- [ ] Deploy `google-sheets/Code.gs` from the clinic's Apps Script account; set `SHEET_ID` and a random `WEBHOOK_TOKEN` in Script Properties; copy the `/exec` URL and matching token into Cloudflare Pages secrets `GOOGLE_SHEETS_WEBHOOK_URL` and `GOOGLE_SHEETS_SHARED_SECRET`.
-- [ ] Configure an EmailJS service and template with `to_email`, `email_subject`, `reply_to`, `recipient_name`, `message_body`, and `patient_first_aid`; set `EMAILJS_SERVICE_ID`, `EMAILJS_TEMPLATE_ID`, `EMAILJS_PUBLIC_KEY`, and the clinic-approved `CLINIC_EMAIL` in Cloudflare Pages.
-- [ ] Add `GEMINI_API_KEY` to Cloudflare Pages if live Gemini responses are wanted.
-- [ ] After those secrets are configured, submit one clearly synthetic test booking, verify the sheet row and both test inbox emails, then remove the test row and message.
+- [x] Cloudflare production contains encrypted variable names `EMAILJS_SERVICE_ID`, `EMAILJS_TEMPLATE_ID`, `EMAILJS_PUBLIC_KEY`, and `CLINIC_EMAIL`.
+- [ ] Resolve EmailJS delivery: synthetic production tests returned `email_status: partial`; check the clinic inbox and EmailJS template/activity dashboard. The endpoint does not reveal which recipient send succeeded.
+- [ ] Deploy the latest `google-sheets/Code.gs`, add the final SMS opt-in header to the `Bookings` tab, set Apps Script properties `SHEET_ID` and `WEBHOOK_TOKEN`, then add production secrets `GOOGLE_SHEETS_WEBHOOK_URL` and `GOOGLE_SHEETS_SHARED_SECRET` in Cloudflare.
+- [ ] Add `GEMINI_API_KEY` as a Cloudflare Pages production secret if live Gemini responses are required.
+- [x] Optional, unchecked bilingual SMS-consent control and opt-in-gated MSG91 Pages Function are present. SMS delivery remains unavailable until MSG91 credentials and the approved DLT template are configured.
+- [ ] Configure MSG91 production secrets `MSG91_AUTH_KEY` and `MSG91_TEMPLATE_ID`, with the matching approved DLT sender and content template. Test only with an explicitly opted-in controlled phone.
 
-Cloudflare Pages production is connected to the GitHub `main` branch, with repository-root output and a no-build command. A custom domain is intentionally not purchased or configured; the current site uses its free `pages.dev` hostname.
+## Account-dependent setup
 
-
-## SEO, privacy, and security hardening
-
-- [x] Added unique homepage metadata, canonical URL, Open Graph/Twitter social metadata, JSON-LD clinic identity, favicon, web manifest, and accessible alt text.
-- [x] Added crawler-visible sitemap.xml, robots.txt with AI search bot access, clean URL redirects, custom noindex 404 page, privacy policy, and terms page.
-- [x] Added cookie-consent gating for optional Google Analytics and browser security headers including HSTS.
-- [x] Removed the stale dist bundle that exposed provider identifiers; appointment secrets remain server-side in Cloudflare Pages.
-- [ ] Add Google Search Console/Bing verification tokens and a real GA4 Measurement ID after owner access is supplied.
+- [ ] Add Google Search Console ownership verification and submit `https://bhoomika-dental-clinic.pages.dev/sitemap.xml` after the owner signs in or supplies the HTML/DNS verification method.
+- [ ] Add Bing Webmaster verification and submit the same sitemap after owner access is available.
+- [ ] Add a real GA4 Measurement ID to the consent-gated `data-ga-measurement-id` attribute after the clinic’s Analytics property is created.
 - [ ] Create and verify the Google Business Profile using the clinic-owned Google account and phone/postcard verification.
-- [ ] Add a custom domain if desired; Cloudflare currently serves the secure pages.dev hostname.
+- [ ] Add a custom domain if desired; the site currently uses the secure free `pages.dev` hostname.
+
+## Deployment notes
+
+The site remains on the free `pages.dev` hostname. Cloudflare’s default Pages hostname redirects HTTP to HTTPS; the published `_headers` file also enables HSTS. A site-wide `noindex` would conflict with the request to index the homepage, so `noindex` is limited to the custom 404 page while public content remains indexable.

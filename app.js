@@ -200,15 +200,22 @@ function initBooking() {
       const automation = await submitAppointment(payload);
       const emailStatus = automation.email_status || (automation.email_configured ? 'sent' : 'not_configured');
       const emailReady = emailStatus === 'sent' || Boolean(automation.email_configured);
+      const smsStatus = automation.sms_status || (payload.sms_opt_in === 'yes' ? 'not_configured' : 'not_opted_in');
       const emailMessage = emailStatus === 'partial'
         ? 'Your request reached the clinic, but one of the email notifications could not be delivered. The clinic will contact you by phone.'
         : emailReady
           ? 'Thank you — your request and email confirmation have been sent.'
           : 'Thank you — your request reached the clinic. Automated email confirmation is not active yet; the clinic will contact you by phone.';
-      setStatus(status, emailMessage, 'success');
+      const smsMessage = payload.sms_opt_in !== 'yes' ? '' : smsStatus === 'sent'
+        ? (currentLanguage === 'kn' ? ' ಅಪಾಯಿಂಟ್‌ಮೆಂಟ್ SMS ವಿನಂತಿಯನ್ನು ಕಳುಹಿಸಲಾಗಿದೆ.' : ' An appointment-related SMS request was sent.')
+        : smsStatus === 'not_configured'
+          ? (currentLanguage === 'kn' ? ' SMS ಸೇವೆ ಇನ್ನೂ ಸಕ್ರಿಯವಾಗಿಲ್ಲ; ಕ್ಲಿನಿಕ್ ಫೋನ್ ಮೂಲಕ ಸಂಪರ್ಕಿಸುತ್ತದೆ.' : ' SMS updates are not active yet; the clinic will contact you by phone.')
+          : (currentLanguage === 'kn' ? ' SMS ಕಳುಹಿಸಲಾಗಲಿಲ್ಲ; ದಯವಿಟ್ಟು ಕ್ಲಿನಿಕ್‌ಗೆ ಕರೆ ಮಾಡಿ.' : ' The SMS could not be sent; please call the clinic if you need help.');
+      setStatus(status, `${emailMessage}${smsMessage}`, 'success');
       if (confirmation) {
         confirmation.hidden = false;
-        confirmation.textContent = emailStatus === 'partial' ? 'Request received. Email delivery was incomplete, so the clinic will contact you by phone. This is a request, not a confirmed appointment.' : emailReady ? 'Request received. The clinic team has been notified and a confirmation email was sent to you. This is a request, not a confirmed appointment.' : 'Request received. The clinic team has your request; automated email confirmation is still being set up. This is a request, not a confirmed appointment. For urgent concerns, call +91 9481731482.';
+        const confirmationMessage = emailStatus === 'partial' ? 'Request received. Email delivery was incomplete, so the clinic will contact you by phone. This is a request, not a confirmed appointment.' : emailReady ? 'Request received. The clinic team has been notified and a confirmation email was sent to you. This is a request, not a confirmed appointment.' : 'Request received. The clinic team has your request; automated email confirmation is still being set up. This is a request, not a confirmed appointment. For urgent concerns, call +91 9481731482.';
+        confirmation.textContent = `${confirmationMessage}${smsMessage}`;
       }
       form.reset();
     } catch (error) {
