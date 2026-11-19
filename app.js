@@ -33,7 +33,9 @@ async function submitAppointment(payload) {
     keepalive: true
   });
   const result = await response.json().catch(() => ({}));
-  if (!response.ok || !result.checkout_url) throw new Error(result.error || 'Payment checkout could not be created.');
+  if (!response.ok) throw new Error(result.error || 'Appointment notification could not be sent.');
+  if (result.email_only) return result;
+  if (!result.checkout_url) throw new Error('Payment checkout could not be created.');
   window.location.assign(result.checkout_url);
   return result;
 }

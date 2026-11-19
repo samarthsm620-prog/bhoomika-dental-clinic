@@ -1,3 +1,5 @@
+import { onRequestPost as onAppointmentPost } from './appointment.js';
+
 const SITE_ORIGIN = 'https://bhoomika-dental-clinic.pages.dev';
 const APPOINTMENT_AMOUNT_INR = 10000; // ₹100.00 in paise; fixed server-side.
 const headers = {
@@ -44,11 +46,22 @@ export async function onRequestOptions() {
 }
 
 export async function onRequestPost({ request, env }) {
-  if (!env.STRIPE_SECRET_KEY) return json({ error: 'Stripe checkout is not configured.' }, 503);
   let input;
   try { input = await request.json(); } catch { return json({ error: 'Invalid request.' }, 400); }
   const payload = normalize(input);
   if (!valid(payload)) return json({ error: 'Please provide valid appointment details and consent.' }, 400);
+
+  // EmailJS-only mode keeps appointment notifications operational while Stripe is being configured.
+  // Google Sheets remains optional and is not part of email delivery.
+  if (!env.STRIPE_SECRET_KEY) {
+    const emailResponse = await onAppointmentPost({
+      request: new Request(request.url, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(payload) }),
+      env
+    });
+    if (!emailResponse.ok) return emailResponse;
+    const result = await emailResponse.json();
+    return json({ ...result, email_only: true, payment_required: false });
+  }
 
   const form = new URLSearchParams();
   formField(form, 'mode', 'payment');
