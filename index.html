@@ -1,11 +1,29 @@
 <!doctype html>
-<html lang="en">
+<html lang="en" data-ga-measurement-id="">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="description" content="Bhoomika Dental Clinic in Badami — thoughtful dental care with clear next steps.">
+  <meta name="description" content="Bhoomika Dental Clinic in Badami — thoughtful dental care from Dr. Lata H. Teredal, BDS, with clear next steps for appointments, prevention, and oral health.">
+  <meta name="robots" content="index,follow,max-image-preview:large,max-snippet:-1,max-video-preview:-1">
+  <meta name="author" content="Bhoomika Dental Clinic">
+  <meta name="application-name" content="Bhoomika Dental Clinic">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="Bhoomika Dental Clinic">
+  <meta property="og:title" content="Bhoomika Dental Clinic | Thoughtful dental care in Badami">
+  <meta property="og:description" content="Meet Dr. Lata H. Teredal, explore oral-health guidance, and request your next dental visit in Badami.">
+  <meta property="og:url" content="https://bhoomika-dental-clinic.pages.dev/">
+  <meta property="og:image" content="https://bhoomika-dental-clinic.pages.dev/images/social-preview.jpg">
+  <meta property="og:image:alt" content="Bhoomika Dental Clinic in Badami">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="Bhoomika Dental Clinic | Thoughtful dental care in Badami">
+  <meta name="twitter:description" content="Clear, compassionate dental care and appointment requests in Badami.">
+  <meta name="twitter:image" content="https://bhoomika-dental-clinic.pages.dev/images/social-preview.jpg">
+  <link rel="canonical" href="https://bhoomika-dental-clinic.pages.dev/">
   <meta name="theme-color" content="#112b55">
-  <link rel="icon" href="/logo.svg" type="image/svg+xml">
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="shortcut icon" href="/favicon.svg">
+  <link rel="apple-touch-icon" href="/favicon.svg">
+  <link rel="manifest" href="/site.webmanifest">
   <title>Bhoomika Dental Clinic | Perfecting Smiles in Badami</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -17,6 +35,21 @@
   <link rel="stylesheet" href="disorders.css">
   <link rel="stylesheet" href="emailjs-upgrades.css">
   <link rel="stylesheet" href="quiz.css">
+  <link rel="stylesheet" href="site-hardening.css">
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Dentist",
+    "name": "Bhoomika Dental Clinic",
+    "url": "https://bhoomika-dental-clinic.pages.dev/",
+    "image": "https://bhoomika-dental-clinic.pages.dev/images/social-preview.jpg",
+    "telephone": "+91 9481731482",
+    "address": {"@type":"PostalAddress","streetAddress":"TMC Complex","addressLocality":"Badami","addressRegion":"Karnataka","addressCountry":"IN"},
+    "openingHours": "Mo-Sa 10:30-14:30, Mo-Sa 17:00-19:30",
+    "medicalSpecialty": "Dentistry",
+    "employee": {"@type":"Person","name":"Dr. Lata H. Teredal","jobTitle":"BDS"}
+  }
+  </script>
   <script defer src="app.js"></script>
 </head>
 <body>
@@ -186,13 +219,19 @@
     </section>
   </main>
 
-  <aside class="callback-row" aria-label="Request a callback"><div class="shell callback-inner"><div class="callback-copy"><span class="callback-icon" aria-hidden="true">↗</span><div><strong>Need a little guidance?</strong><span>Leave your number and we’ll call you back.</span></div></div><form id="callback-form"><input type="hidden" name="workflow_type" value="callback_triage"><label class="sr-only" for="callback-name">Your name</label><input id="callback-name" name="name" placeholder="Your name" autocomplete="name" required><label class="sr-only" for="callback-phone">Phone number</label><input id="callback-phone" name="phone" type="tel" placeholder="Phone number" autocomplete="tel" required><label class="sr-only" for="callback-concern">Concern</label><input id="callback-concern" name="concern" placeholder="What can we help with?" required><button class="button button-dark" type="submit">Call me back <span aria-hidden="true">↗</span></button></form><div id="callback-status" class="form-status" role="status" aria-live="polite"></div></div></aside>
+  <aside class="callback-row" aria-label="Request a callback"><div class="shell callback-inner"><div class="callback-copy"><span class="callback-icon" aria-hidden="true">↗</span><div><strong>Need a little guidance?</strong><span>Leave your number and we’ll call you back.</span></div></div><form id="callback-form"><input type="hidden" name="workflow_type" value="callback_triage"><label class="sr-only" for="callback-name">Your name</label><input id="callback-name" name="name" placeholder="Your name" autocomplete="name" required><label class="sr-only" for="callback-phone">Phone number</label><input id="callback-phone" name="phone" type="tel" placeholder="Phone number" autocomplete="tel" required><label class="sr-only" for="callback-concern">Concern</label><input id="callback-concern" name="concern" placeholder="What can we help with?" required><label class="honeypot" for="callback-website">Website</label><input class="honeypot" id="callback-website" name="website" tabindex="-1" autocomplete="off" aria-hidden="true"><button class="button button-dark" type="submit">Call me back <span aria-hidden="true">↗</span></button></form><div id="callback-status" class="form-status" role="status" aria-live="polite"></div></div></aside>
 
   <button class="voice-fab" id="voice-toggle" type="button" aria-expanded="false" aria-controls="voice-panel"><span class="voice-pulse" aria-hidden="true"></span><span class="gemini-mark" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><path d="M12 1.8c.8 5.6 3.7 8.5 9.3 9.3-5.6.8-8.5 3.7-9.3 9.3-.8-5.6-3.7-8.5-9.3-9.3 5.6-.8 8.5-3.7 9.3-9.3Z"/><path d="M19.2 1.5c.3 2 1.3 3 3.3 3.3-2 .3-3 1.3-3.3 3.3-.3-2-1.3-3-3.3-3.3 2-.3 3-1.3 3.3-3.3Z"/></svg></span><span class="voice-label">Ask Gemini</span><span class="mic" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><path d="M12 3a3 3 0 0 0-3 3v5a3 3 0 0 0 6 0V6a3 3 0 0 0-3-3Z"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3M8 21h8"/></svg></span></button>
   <section class="voice-panel" id="voice-panel" role="dialog" aria-modal="true" aria-labelledby="voice-title" hidden><div class="voice-panel-head"><div><p class="section-label"><span class="gemini-mark" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><path d="M12 1.8c.8 5.6 3.7 8.5 9.3 9.3-5.6.8-8.5 3.7-9.3 9.3-.8-5.6-3.7-8.5-9.3-9.3 5.6-.8 8.5-3.7 9.3-9.3Z"/></svg></span> Gemini AI assistant</p><h2 id="voice-title">Tell us what you need.</h2></div><button class="icon-button" id="voice-close" type="button" aria-label="Close voice assistant">×</button></div><p id="voice-mode" class="voice-mode" role="status" aria-live="polite">Gemini status will appear after your first question.</p><p>Ask about clinic hours, care areas, or say “I need an appointment for a toothache.”</p><div id="voice-transcript" class="voice-transcript" role="status" aria-live="polite">Press the microphone to begin.</div><div class="voice-typed"><label for="voice-question">Or type your question</label><div><input id="voice-question" type="text" placeholder="Where is the clinic?"><button class="button" id="voice-ask" type="button">Ask</button></div></div><div class="voice-actions"><button class="button" id="voice-listen" type="button"><span class="voice-mic-icon" aria-hidden="true"><svg viewBox="0 0 24 24" focusable="false"><path d="M12 3a3 3 0 0 0-3 3v5a3 3 0 0 0 6 0V6a3 3 0 0 0-3-3Z"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3M8 21h8"/></svg></span> Start listening</button><button class="quiet-link" id="voice-speak" type="button">Read last answer aloud</button></div><div id="voice-answer" class="voice-answer" role="status" aria-live="polite"></div></section>
 
 <section class="workspace-section shell" aria-labelledby="workspace-title"><div class="workspace-card"><div><p class="section-label">Clinic workspace</p><h2 id="workspace-title">Keep the care team<br><em>in sync.</em></h2><p>Open the clinic’s Google Workspace tools from one place. Sign in with the clinic-owned account before viewing or editing patient information.</p></div><div class="workspace-links" aria-label="Google Workspace tools"><a href="https://drive.google.com/" target="_blank" rel="noreferrer">Drive <span>↗</span></a><a href="https://docs.google.com/" target="_blank" rel="noreferrer">Docs <span>↗</span></a><a href="https://sheets.google.com/" target="_blank" rel="noreferrer">Sheets <span>↗</span></a><a href="https://slides.google.com/" target="_blank" rel="noreferrer">Slides <span>↗</span></a><a href="https://forms.google.com/" target="_blank" rel="noreferrer">Forms <span>↗</span></a></div></div></section>
 
-<footer class="site-footer"><div class="shell footer-grid"><div><a class="brand footer-brand" href="#top"><span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 40 40"><path d="M20 4c-7 0-12 4-12 11 0 7 2 18 7 18 3 0 2-9 5-9s2 9 5 9c5 0 7-11 7-18C32 8 27 4 20 4Z"/><path d="M12 13c3-3 13-3 16 0"/></svg></span><span><strong>Bhoomika</strong><small>Dental Clinic</small></span></a><p>Small steps. Stronger smiles.</p></div><div><p class="footer-label">Contact</p><a href="tel:+919481731482">+91 9481731482</a><a href="#hours">TMC Complex, Badami</a></div><div><p class="footer-label">Explore</p><a href="#care">Our care</a><a href="#doctor">Meet Dr. Lata</a><a href="#hours">Clinic timings</a></div></div><div class="shell footer-bottom"><span>© 2026 Bhoomika Dental Clinic</span><span>Accessible care, in every sense.</span></div></footer>
+<footer class="site-footer"><div class="shell footer-grid"><div><a class="brand footer-brand" href="#top"><span class="brand-mark" aria-hidden="true"><svg viewBox="0 0 40 40"><path d="M20 4c-7 0-12 4-12 11 0 7 2 18 7 18 3 0 2-9 5-9s2 9 5 9c5 0 7-11 7-18C32 8 27 4 20 4Z"/><path d="M12 13c3-3 13-3 16 0"/></svg></span><span><strong>Bhoomika</strong><small>Dental Clinic</small></span></a><p>Small steps. Stronger smiles.</p></div><div><p class="footer-label">Contact</p><a href="tel:+919481731482">+91 9481731482</a><a href="#hours">TMC Complex, Badami</a></div><div><p class="footer-label">Explore</p><a href="#care">Our care</a><a href="#doctor">Meet Dr. Lata</a><a href="#hours">Clinic timings</a></div></div><div class="shell footer-bottom"><span>© 2026 Bhoomika Dental Clinic</span><span>Accessible care, in every sense.</span><span><a href="/privacy-policy.html">Privacy</a> · <a href="/terms-and-conditions.html">Terms</a></span></div></footer>
+
+  <aside class="cookie-consent" id="cookie-consent" role="dialog" aria-labelledby="cookie-title" aria-describedby="cookie-description" hidden>
+    <strong id="cookie-title">Privacy choices</strong>
+    <p id="cookie-description">We use essential storage to remember this choice. Optional analytics will load only if you accept and only after the clinic configures a valid analytics property.</p>
+    <div class="cookie-consent-actions"><button class="button button-small" id="cookie-accept" type="button">Accept analytics</button><button class="button button-small button-light" id="cookie-essential" type="button">Use essential only</button><a href="/privacy-policy.html">Privacy policy</a></div>
+  </aside>
 </body>
 </html>

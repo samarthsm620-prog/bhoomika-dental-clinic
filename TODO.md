@@ -19,3 +19,14 @@
 - [ ] After those secrets are configured, submit one clearly synthetic test booking, verify the sheet row and both test inbox emails, then remove the test row and message.
 
 Cloudflare Pages production is connected to the GitHub `main` branch, with repository-root output and a no-build command. A custom domain is intentionally not purchased or configured; the current site uses its free `pages.dev` hostname.
+
+
+## SEO, privacy, and security hardening
+
+- [x] Added unique homepage metadata, canonical URL, Open Graph/Twitter social metadata, JSON-LD clinic identity, favicon, web manifest, and accessible alt text.
+- [x] Added crawler-visible sitemap.xml, robots.txt with AI search bot access, clean URL redirects, custom noindex 404 page, privacy policy, and terms page.
+- [x] Added cookie-consent gating for optional Google Analytics and browser security headers including HSTS.
+- [x] Removed the stale dist bundle that exposed provider identifiers; appointment secrets remain server-side in Cloudflare Pages.
+- [ ] Add Google Search Console/Bing verification tokens and a real GA4 Measurement ID after owner access is supplied.
+- [ ] Create and verify the Google Business Profile using the clinic-owned Google account and phone/postcard verification.
+- [ ] Add a custom domain if desired; Cloudflare currently serves the secure pages.dev hostname.

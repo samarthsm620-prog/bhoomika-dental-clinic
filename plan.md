@@ -34,3 +34,11 @@ A premium, bilingual dental clinic landing page for Bhoomika Dental Clinic in Ba
 - `functions/api/gemini.js` — optional Cloudflare Pages Function proxy.
 - `public/manus-routes.json` — route manifest.
 - `README.md` — local run, webhook, Gemini, and Cloudflare setup.
+
+
+## SEO, privacy, and security
+- Use the canonical Cloudflare Pages origin for homepage metadata, JSON-LD, Open Graph/Twitter previews, sitemap, and robots.
+- Keep the public homepage indexable; apply `noindex` only to the custom 404 page so search indexing and the requested noindex behavior do not conflict.
+- Keep EmailJS, Gemini, Sheets, and other provider secrets in server/runtime configuration, never browser bundles.
+- Gate optional GA4 loading behind a consent banner; configure a real Measurement ID only after owner access is supplied.
+- Provide privacy and terms pages, HSTS/security headers, clean URL aliases, a manifest, and a no-build static deployment.

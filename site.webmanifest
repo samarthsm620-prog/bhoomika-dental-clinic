@@ -1,0 +1,11 @@
+{
+  "name": "Bhoomika Dental Clinic",
+  "short_name": "Bhoomika Dental",
+  "description": "Thoughtful dental care in Badami from Dr. Lata H. Teredal, BDS.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#f6fbfa",
+  "theme_color": "#112b55",
+  "icons": [{"src":"/favicon.svg","sizes":"any","type":"image/svg+xml","purpose":"any maskable"}]
+}

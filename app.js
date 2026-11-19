@@ -257,6 +257,8 @@ function initCallback() {
     if (!form.reportValidity()) return;
     setStatus(status, 'Sending…');
     const payload = { ...collectForm(form), submitted_at: new Date().toISOString(), source: 'sticky-callback-row', language: currentLanguage };
+    if (payload.website) return;
+    delete payload.website;
     try {
       await postWebhook(CALLBACK_WEBHOOK, payload);
       setStatus(status, 'Received — the clinic will call you back soon.', 'success');
@@ -425,6 +427,36 @@ function initVoice() {
   listen?.addEventListener('click', () => { recognition.lang = currentLanguage === 'kn' ? 'kn-IN' : 'en-IN'; recognition.start(); });
 }
 
+function initCookieConsent() {
+  const banner = $('#cookie-consent');
+  if (!banner) return;
+  const key = 'bhoomika-analytics-consent-v1';
+  const measurementId = document.documentElement.dataset.gaMeasurementId?.trim();
+  const loadAnalytics = () => {
+    if (!measurementId || window.__bhoomikaAnalyticsLoaded) return;
+    window.__bhoomikaAnalyticsLoaded = true;
+    window.dataLayer = window.dataLayer || [];
+    window.gtag = (...args) => window.dataLayer.push(args);
+    window.gtag('js', new Date());
+    window.gtag('config', measurementId, { anonymize_ip: true });
+    const script = document.createElement('script');
+    script.async = true;
+    script.src = `https://www.googletagmanager.com/gtag/js?id=${encodeURIComponent(measurementId)}`;
+    document.head.appendChild(script);
+  };
+  const save = (value) => {
+    try { localStorage.setItem(key, value); } catch { /* consent remains session-only if storage is unavailable */ }
+    banner.hidden = true;
+    if (value === 'accepted') loadAnalytics();
+  };
+  let consent = '';
+  try { consent = localStorage.getItem(key) || ''; } catch { consent = ''; }
+  if (consent === 'accepted') loadAnalytics();
+  if (!consent) banner.hidden = false;
+  $('#cookie-accept')?.addEventListener('click', () => save('accepted'));
+  $('#cookie-essential')?.addEventListener('click', () => save('essential'));
+}
+
 async function loadDisorders() { try { disorders = await fetch('oral-disorders.json').then((response) => response.json()); } catch { disorders = []; } }
-async function boot() { initNavigation(); initHeroMedia(); initLanguage(); initBooking(); initCheckup(); initCallback(); initFeedback(); initSpecialtyCards(); await Promise.all([loadKnowledge(), loadDisorders()]); initSearch(); initConditions(); initVoice(); }
+async function boot() { initCookieConsent(); initNavigation(); initHeroMedia(); initLanguage(); initBooking(); initCheckup(); initCallback(); initFeedback(); initSpecialtyCards(); await Promise.all([loadKnowledge(), loadDisorders()]); initSearch(); initConditions(); initVoice(); }
 boot();
