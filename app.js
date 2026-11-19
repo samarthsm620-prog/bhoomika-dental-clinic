@@ -26,7 +26,7 @@ async function postWebhook(url, payload) {
 }
 
 async function submitAppointment(payload) {
-  const response = await fetch('/api/stripe-checkout', {
+  const response = await fetch('/api/appointment', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
@@ -34,9 +34,7 @@ async function submitAppointment(payload) {
   });
   const result = await response.json().catch(() => ({}));
   if (!response.ok) throw new Error(result.error || 'Appointment notification could not be sent.');
-  if (result.email_only) return result;
-  if (!result.checkout_url) throw new Error('Payment checkout could not be created.');
-  window.location.assign(result.checkout_url);
+  if (!result.ok) throw new Error(result.error || 'The appointment request could not be routed.');
   return result;
 }
 
@@ -190,37 +188,63 @@ function initBooking() {
   });
   form?.addEventListener('submit', async (event) => {
     event.preventDefault();
+    if (form.dataset.submitting === 'true') return;
     if (!form.reportValidity()) return;
-    const payload = { ...collectForm(form), submitted_at: new Date().toISOString(), language: currentLanguage, source: 'website-booking-form' };
+    form.dataset.submitting = 'true';
+    const submitButton = form.querySelector('button[type="submit"]');
+    if (submitButton) submitButton.disabled = true;
+    const payload = { ...collectForm(form), request_id: crypto.randomUUID(), submitted_at: new Date().toISOString(), language: currentLanguage };
     const isPreventive = payload.workflow_type === 'preventive_screening';
     setStatus(status, isPreventive ? 'Sending your preventive screening request…' : 'Sending your appointment request…');
     if (confirmation) confirmation.hidden = true;
+    const paymentPanel = $('#booking-payment');
+    if (paymentPanel) paymentPanel.hidden = true;
     try {
       const automation = await submitAppointment(payload);
-      const emailStatus = automation.email_status || (automation.email_configured ? 'sent' : 'not_configured');
-      const emailReady = emailStatus === 'sent' || Boolean(automation.email_configured);
-      const smsStatus = automation.sms_status || (payload.sms_opt_in === 'yes' ? 'not_configured' : 'not_opted_in');
-      const emailMessage = emailStatus === 'partial'
-        ? 'Your request reached the clinic, but one of the email notifications could not be delivered. The clinic will contact you by phone.'
-        : emailReady
-          ? 'Thank you — your request and email confirmation have been sent.'
-          : 'Thank you — your request reached the clinic. Automated email confirmation is not active yet; the clinic will contact you by phone.';
-      const smsMessage = payload.sms_opt_in !== 'yes' ? '' : smsStatus === 'sent'
-        ? (currentLanguage === 'kn' ? ' ಅಪಾಯಿಂಟ್‌ಮೆಂಟ್ SMS ವಿನಂತಿಯನ್ನು ಕಳುಹಿಸಲಾಗಿದೆ.' : ' An appointment-related SMS request was sent.')
-        : smsStatus === 'not_configured'
-          ? (currentLanguage === 'kn' ? ' SMS ಸೇವೆ ಇನ್ನೂ ಸಕ್ರಿಯವಾಗಿಲ್ಲ; ಕ್ಲಿನಿಕ್ ಫೋನ್ ಮೂಲಕ ಸಂಪರ್ಕಿಸುತ್ತದೆ.' : ' SMS updates are not active yet; the clinic will contact you by phone.')
-          : (currentLanguage === 'kn' ? ' SMS ಕಳುಹಿಸಲಾಗಲಿಲ್ಲ; ದಯವಿಟ್ಟು ಕ್ಲಿನಿಕ್‌ಗೆ ಕರೆ ಮಾಡಿ.' : ' The SMS could not be sent; please call the clinic if you need help.');
-      setStatus(status, `${emailMessage}${smsMessage}`, 'success');
+      const qrUrl = automation.payment_qr_url;
+      if (qrUrl) {
+        try {
+          const safeQrUrl = new URL(qrUrl, window.location.href);
+          if (safeQrUrl.protocol === 'https:' && !safeQrUrl.username && !safeQrUrl.password) {
+            const qrImage = $('#booking-payment img');
+            const qrLink = $('#booking-payment a');
+            if (qrImage) qrImage.src = safeQrUrl.href;
+            if (qrLink) qrLink.href = safeQrUrl.href;
+          }
+        } catch { /* The local QR remains the safe fallback. */ }
+      }
+      const emailStatus = automation.email_status || 'not_configured';
+      const appointmentNumber = automation.appointment_number || 'not available';
+      const clinicAccepted = Number(automation.clinic_recipients_accepted || 0);
+      const clinicExpected = Number(automation.clinic_recipients_expected || 0);
+      const patientAccepted = Boolean(automation.patient_email_accepted);
+      const allClinicAccepted = clinicExpected > 0 && clinicAccepted === clinicExpected;
+      const acceptedDetails = `EmailJS accepted ${clinicAccepted}/${clinicExpected} clinic email requests and ${patientAccepted ? 'the patient email request' : 'did not accept the patient email request'}. Provider acceptance does not verify inbox delivery.`;
+      const emailMessage = emailStatus === 'accepted'
+        ? acceptedDetails
+        : emailStatus === 'partial'
+          ? `EmailJS accepted only part of the notification requests. ${acceptedDetails} ${allClinicAccepted ? 'Please call the clinic if you need the patient email resent.' : 'Please call the clinic before paying.'}`
+          : 'The email service did not confirm accepting the notification requests. Please call the clinic to make sure the request is received.';
+      const paymentGuidance = allClinicAccepted
+        ? 'This is a request, not a confirmed appointment. The ₹100 PhonePe payment is pending manual verification; wait for the clinic to confirm availability.'
+        : 'This is a request, not a confirmed appointment. Call the clinic before paying; PhonePe payment has not been verified.';
+      const requestMessage = `Request number: ${appointmentNumber}. ${emailMessage} ${paymentGuidance}`;
+      const statusKind = emailStatus === 'accepted' ? 'success' : emailStatus === 'partial' ? 'warning' : 'error';
+      setStatus(status, requestMessage, statusKind);
       if (confirmation) {
         confirmation.hidden = false;
-        const confirmationMessage = emailStatus === 'partial' ? 'Request received. Email delivery was incomplete, so the clinic will contact you by phone. This is a request, not a confirmed appointment.' : emailReady ? 'Request received. The clinic team has been notified and a confirmation email was sent to you. This is a request, not a confirmed appointment.' : 'Request received. The clinic team has your request; automated email confirmation is still being set up. This is a request, not a confirmed appointment. For urgent concerns, call +91 9481731482.';
-        confirmation.textContent = `${confirmationMessage}${smsMessage}`;
+        confirmation.textContent = requestMessage;
       }
+      if (paymentPanel) paymentPanel.hidden = !allClinicAccepted;
       form.reset();
     } catch (error) {
       if (confirmation) confirmation.hidden = false;
       if (confirmation) confirmation.textContent = 'We could not complete the request just now. Please call +91 9481731482 so the clinic can help you directly.';
       setStatus(status, 'Your request could not be fully sent just now. Please call +91 9481731482.', 'error');
+      if (paymentPanel) paymentPanel.hidden = true;
+    } finally {
+      form.dataset.submitting = 'false';
+      if (submitButton) submitButton.disabled = false;
     }
   });
 }
@@ -464,17 +488,5 @@ function initCookieConsent() {
 }
 
 async function loadDisorders() { try { disorders = await fetch('oral-disorders.json').then((response) => response.json()); } catch { disorders = []; } }
-function initPaymentReturn() {
-  const params = new URLSearchParams(window.location.search);
-  const state = params.get('payment');
-  const confirmation = $('#booking-confirmation');
-  if (!confirmation || !state) return;
-  confirmation.hidden = false;
-  confirmation.className = state === 'success' ? 'form-status success' : 'form-status';
-  confirmation.textContent = state === 'success'
-    ? 'Payment received. The clinic and patient confirmation emails are being sent directly from the clinic system. Please check the patient email for the appointment number.'
-    : 'Payment was cancelled. No appointment payment was completed.';
-  $('#booking-panel')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-}
-async function boot() { initCookieConsent(); initNavigation(); initHeroMedia(); initLanguage(); initBooking(); initCheckup(); initCallback(); initFeedback(); initSpecialtyCards(); initPaymentReturn(); await Promise.all([loadKnowledge(), loadDisorders()]); initSearch(); initConditions(); initVoice(); }
+async function boot() { initCookieConsent(); initNavigation(); initHeroMedia(); initLanguage(); initBooking(); initCheckup(); initCallback(); initFeedback(); initSpecialtyCards(); await Promise.all([loadKnowledge(), loadDisorders()]); initSearch(); initConditions(); initVoice(); }
 boot();

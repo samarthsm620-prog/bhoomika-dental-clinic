@@ -1,122 +1,114 @@
 # Bhoomika Dental Clinic EmailJS Payload Contract
 
-The website sends appointment messages through `https://api.emailjs.com/api/v1.0/email/send` using the clinic's EmailJS service, template, and public key.
+Appointment booking is a direct EmailJS notification flow. It does not depend on Stripe, Google Sheets, or a payment webhook. The PhonePe QR is supplied in the same email template, while payment remains pending for manual clinic verification.
 
-## Common REST envelope
+## Service configuration
 
-```json
-{
-  "service_id": "service_oz00kf3",
-  "template_id": "template_lb2zn9m",
-  "user_id": "4F8rvg3HsYXpJ3NTa",
-  "template_params": {}
-}
+- EmailJS service ID: `service_oz00kf3`
+- EmailJS template ID: `template_lb2zn9m`
+- Cloudflare secrets: `EMAILJS_PUBLIC_KEY`, `CLINIC_EMAIL`, and `CLINIC_ASSISTANT_EMAIL`
+- Patient recipient: the email address submitted with the request
+- QR image: `https://bhoomika-dental-clinic.pages.dev/images/payment/phonepe-appointment-qr.jpeg`
+
+Both distinct clinic recipients must be configured; the function fails closed if either address is missing or duplicated. The website never stores or asks for an EmailJS account password. Recipient addresses and the EmailJS public key remain in Cloudflare settings, not this repository.
+
+## Appointment number and status
+
+Each request gets a reference in this format:
+
+```text
+BHC-YYYYMMDD-XXXXXXXX
 ```
 
-The public key is only used server-side by the Cloudflare Pages Function; it is not embedded in the frontend.
+The date uses Asia/Kolkata. This reference is generated for the request; it is not proof of a confirmed time slot or payment. The appointment endpoint does not currently store a durable booking record, so the number is carried in the email notifications rather than backed by a database.
 
-## Clinic notification payload
+The ₹100 PhonePe payment status remains `pending — manual PhonePe verification`. The clinic must verify payment and availability before confirming an appointment. EmailJS HTTP success means the provider accepted an email request; it does **not** prove delivery to the recipient's inbox. The API returns `delivery_verified: false` and separate accepted counts for clinic and patient messages.
 
-The appointment Function sends one clinic notification to each configured recipient:
+## Clinic notification template parameters
 
-- `drlatamabrumkar@gmail.com`
-- `assistantbhoomikadentalclinic@gmail.com`
+Each clinic recipient receives one request with these parameters:
 
 ```json
 {
-  "to_email": "drlatamabrumkar@gmail.com",
+  "to_email": "clinic recipient from Cloudflare settings",
   "reply_to": "patient@example.com",
-  "email_subject": "Appointment request — Synthetic Patient",
+  "email_subject": "Appointment request — BHC-20261119-ABCDEF12",
   "recipient_name": "Bhoomika Dental Clinic team",
+  "appointment_number": "BHC-20261119-ABCDEF12",
   "appointment_fee_inr": "100",
-  "payment_status": "pending",
+  "payment_status": "pending — manual PhonePe verification",
   "payment_qr_url": "https://bhoomika-dental-clinic.pages.dev/images/payment/phonepe-appointment-qr.jpeg",
-  "message_body": "NEW APPOINTMENT REQUEST\nRequest ID: example-request-id\nPatient: Synthetic Patient\nPhone: +919000000000\nEmail: patient@example.com\nRequest type: Appointment request\nCare area: Routine dental check-up\nPreferred date/time: 2099-01-01 10:30\nConcern: Synthetic test only\nLanguage: en\nAppointment fee: ₹100 INR — pending payment\nPhonePe QR: https://bhoomika-dental-clinic.pages.dev/images/payment/phonepe-appointment-qr.jpeg",
+  "calendar_link": "optional tentative Google Calendar URL, when date and time were provided",
+  "message_body": "Request number, patient contact details, generic appointment-coordination notice, requested time, pending-payment note, clinic location, and PhonePe QR link",
   "patient_first_aid": ""
 }
 ```
 
-The second clinic payload is identical except for:
+The selected care area, free-text dental concern, and uploaded filenames are not included in appointment notification emails. The form does not upload files.
 
-```json
-{
-  "to_email": "assistantbhoomikadentalclinic@gmail.com"
-}
-```
-
-## Patient receipt payload
+## Patient receipt template parameters
 
 ```json
 {
   "to_email": "patient@example.com",
-  "reply_to": "drlatamabrumkar@gmail.com",
-  "email_subject": "We received your Bhoomika Dental Clinic request",
+  "reply_to": "doctor recipient from Cloudflare settings",
+  "email_subject": "Request received — BHC-20261119-ABCDEF12",
   "recipient_name": "Synthetic Patient",
+  "appointment_number": "BHC-20261119-ABCDEF12",
   "appointment_fee_inr": "100",
-  "payment_status": "pending",
+  "payment_status": "pending — manual PhonePe verification",
   "payment_qr_url": "https://bhoomika-dental-clinic.pages.dev/images/payment/phonepe-appointment-qr.jpeg",
-  "message_body": "Thank you, Synthetic Patient. The clinic has received your appointment request.\n\nAppointment fee: ₹100 INR — payment pending. Scan the PhonePe QR code shown below in this email, then keep the payment receipt. The clinic will verify payment and contact you to confirm availability. This is a request, not a confirmed appointment.\n\nPhonePe QR: https://bhoomika-dental-clinic.pages.dev/images/payment/phonepe-appointment-qr.jpeg\n\nClinic: +91 9481731482",
-  "patient_first_aid": "If you have severe facial swelling, uncontrolled bleeding, a dental injury, or difficulty breathing or swallowing, seek urgent local medical care now. Do not wait for an email reply. This message is not a diagnosis or emergency service."
+  "calendar_link": "optional tentative Google Calendar URL, when date and time were provided",
+  "message_body": "Request number, requested time (not confirmed), clinic address, pending PhonePe payment instructions, QR link, and a tentative calendar link when available",
+  "patient_first_aid": "Generic urgent-care guidance only"
 }
 ```
 
+The calendar link is a **tentative placeholder for the requested time**, not a confirmed calendar invitation. It is omitted when the patient does not provide both a valid preferred date and time.
+
 ## Required EmailJS template fields
 
-The EmailJS template must contain these fields:
+Configure the EmailJS template with:
 
 ```text
 To: {{to_email}}
 Subject: {{email_subject}}
 Reply-To: {{reply_to}}
-
-{{recipient_name}}
-{{message_body}}
-{{patient_first_aid}}
 ```
 
-To render the QR image below the message, add this HTML in the EmailJS template editor:
+Use `{{recipient_name}}`, `{{appointment_number}}`, `{{message_body}}`, and `{{patient_first_aid}}` in the body. To render the QR as an image, the EmailJS HTML template must include:
 
 ```html
 <hr>
-<p><strong>₹100 INR appointment fee / PhonePe payment</strong></p>
+<p><strong>Appointment request {{appointment_number}}</strong></p>
+<p>Fee: ₹{{appointment_fee_inr}} INR</p>
 <p>Payment status: {{payment_status}}</p>
-<p>Appointment fee: ₹{{appointment_fee_inr}} INR</p>
 <img src="{{payment_qr_url}}" alt="Bhoomika Dental Clinic PhonePe QR code" style="max-width:320px;width:100%;height:auto;display:block">
+<p><a href="{{payment_qr_url}}">Open the PhonePe QR code</a></p>
 ```
 
-If the EmailJS editor strips the image tag, add this fallback link:
+For a requested date/time, add a link only as a tentative placeholder:
 
 ```html
-<a href="{{payment_qr_url}}">Open the Bhoomika Dental Clinic PhonePe QR code</a>
+<a href="{{calendar_link}}">Add this requested time to your calendar (not confirmed)</a>
 ```
 
-## Paid Stripe webhook payload
+If EmailJS strips the image, keep the direct QR link so patients can still open it. A successful EmailJS response is not a delivery receipt; verify a test message in the destination inbox before describing it as received.
 
-After a verified Stripe `checkout.session.completed` event, the webhook sends the same three-recipient pattern with:
+## API response example
 
 ```json
 {
-  "appointment_number": "BHC-20261119-CS1234",
-  "payment_status": "succeeded",
-  "amount_inr": "100",
-  "payment_qr_url": "https://bhoomika-dental-clinic.pages.dev/images/payment/phonepe-appointment-qr.jpeg",
-  "clinic_phone": "+91 9481731482"
+  "ok": true,
+  "appointment_number": "BHC-20261119-ABCDEF12",
+  "email_provider": "EmailJS",
+  "email_status": "accepted",
+  "clinic_recipients_expected": 2,
+  "clinic_recipients_accepted": 2,
+  "patient_email_accepted": true,
+  "delivery_verified": false,
+  "payment_status": "pending_manual_phonepe_verification"
 }
 ```
 
-## Live Stripe test prerequisites
-
-A live ₹100 Stripe test cannot run until these Cloudflare production secrets are supplied:
-
-```text
-STRIPE_SECRET_KEY=sk_test_...
-STRIPE_WEBHOOK_SECRET=whsec_...
-```
-
-The Stripe webhook endpoint is:
-
-```text
-https://bhoomika-dental-clinic.pages.dev/api/stripe-webhook
-```
-
-The checkout amount is fixed server-side at `10000` paise, which is ₹100 INR. The website currently has no Stripe secrets configured, so the successful live test performed on 2026-11-19 was the EmailJS-only appointment path, not a Stripe payment.
+`accepted` means EmailJS accepted each send request. `partial`, `failed`, and `not_configured` are reported separately. No status from the booking form means “payment received” or “appointment confirmed.”

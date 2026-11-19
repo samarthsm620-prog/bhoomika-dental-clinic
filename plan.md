@@ -21,24 +21,24 @@ A premium, bilingual dental clinic landing page for Bhoomika Dental Clinic in Ba
 - Static HTML/CSS/vanilla JavaScript for Cloudflare Pages.
 - `clinic-knowledge.json` stores bilingual clinic facts and assistant mappings.
 - `functions/api/gemini.js` provides an optional server-side Gemini proxy using `GEMINI_API_KEY`; the browser falls back to local intent matching and Web Speech API if unavailable.
-- Main booking webhook uses `workflow_type: appointment|preventive_screening`.
+- The appointment form posts JSON to the same-origin `/api/appointment` Pages Function; it uses EmailJS notifications and has no booking/payment webhook.
 - Sticky callback form posts to the callback-triage webhook.
-- Appointment and callback submissions use text/plain JSON bodies to remain simple-request friendly from static hosting.
+- Appointment submissions use JSON through the same-origin Pages Function; the separate callback form posts to the callback-triage webhook.
 - No Apollo proprietary assets or brand marks are copied; the visual language is an original healthcare interpretation.
 
 ## Project structure
 - `index.html` — semantic page, forms, content sections, live regions.
 - `styles.css` — responsive visual system and reduced-motion/accessibility rules.
-- `app.js` — translations, form routing, specialty search, voice assistant, webhook client.
+- `app.js` — translations, appointment and callback form routing, specialty search, voice assistant.
 - `clinic-knowledge.json` — assistant facts and search mappings.
 - `functions/api/gemini.js` — optional Cloudflare Pages Function proxy.
 - `public/manus-routes.json` — route manifest.
-- `README.md` — local run, webhook, Gemini, and Cloudflare setup.
+- `README.md` — local run, EmailJS appointment flow, Gemini, and Cloudflare setup.
 
 
 ## SEO, privacy, and security
 - Use the canonical Cloudflare Pages origin for homepage metadata, JSON-LD, Open Graph/Twitter previews, sitemap, and robots.
 - Keep the public homepage indexable; apply `noindex` only to the custom 404 page so search indexing and the requested noindex behavior do not conflict.
-- Keep EmailJS, Gemini, Sheets, and other provider secrets in server/runtime configuration, never browser bundles.
+- Keep EmailJS and Gemini provider secrets in server/runtime configuration, never browser bundles.
 - Gate optional GA4 loading behind a consent banner; configure a real Measurement ID only after owner access is supplied.
 - Provide privacy and terms pages, HSTS/security headers, clean URL aliases, a manifest, and a no-build static deployment.
