@@ -1,4 +1,3 @@
-const APPOINTMENT_WEBHOOK = 'https://api.manus.im/api/webhook/triggers/c52fc9be-e19c-4cc1-a216-bcde5fa96e94';
 const CALLBACK_WEBHOOK = 'https://api.manus.im/api/webhook/triggers/4d03e54a-29c5-4948-a3dc-32f5596b279c';
 const KNOWLEDGE_URL = 'clinic-knowledge.json';
 const CLINIC_PHONE = '919481731482';
@@ -27,18 +26,16 @@ async function postWebhook(url, payload) {
 }
 
 async function submitAppointment(payload) {
-  const response = await fetch('/api/appointment', {
+  const response = await fetch('/api/stripe-checkout', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(payload),
     keepalive: true
   });
-  if (response.ok) return response.json();
-  if (response.status !== 404 && response.status !== 503) throw new Error('Appointment automation failed.');
-  // Keep the existing live webhook as a safe fallback while clinic credentials are configured.
-  const fallback = await postWebhook(APPOINTMENT_WEBHOOK, payload);
-  if (!fallback.ok) throw new Error('Appointment delivery failed.');
-  return { ok: true, fallback: true };
+  const result = await response.json().catch(() => ({}));
+  if (!response.ok || !result.checkout_url) throw new Error(result.error || 'Payment checkout could not be created.');
+  window.location.assign(result.checkout_url);
+  return result;
 }
 
 function collectForm(form) {
@@ -465,5 +462,17 @@ function initCookieConsent() {
 }
 
 async function loadDisorders() { try { disorders = await fetch('oral-disorders.json').then((response) => response.json()); } catch { disorders = []; } }
-async function boot() { initCookieConsent(); initNavigation(); initHeroMedia(); initLanguage(); initBooking(); initCheckup(); initCallback(); initFeedback(); initSpecialtyCards(); await Promise.all([loadKnowledge(), loadDisorders()]); initSearch(); initConditions(); initVoice(); }
+function initPaymentReturn() {
+  const params = new URLSearchParams(window.location.search);
+  const state = params.get('payment');
+  const confirmation = $('#booking-confirmation');
+  if (!confirmation || !state) return;
+  confirmation.hidden = false;
+  confirmation.className = state === 'success' ? 'form-status success' : 'form-status';
+  confirmation.textContent = state === 'success'
+    ? 'Payment received. The clinic and patient confirmation emails are being sent directly from the clinic system. Please check the patient email for the appointment number.'
+    : 'Payment was cancelled. No appointment payment was completed.';
+  $('#booking-panel')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+async function boot() { initCookieConsent(); initNavigation(); initHeroMedia(); initLanguage(); initBooking(); initCheckup(); initCallback(); initFeedback(); initSpecialtyCards(); initPaymentReturn(); await Promise.all([loadKnowledge(), loadDisorders()]); initSearch(); initConditions(); initVoice(); }
 boot();
