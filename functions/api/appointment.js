@@ -164,17 +164,6 @@ async function logToSheets(payload, env) {
   return { configured: true, duplicate: Boolean(result.duplicate) };
 }
 
-async function logToManusWebhook(payload, env) {
-  if (!env.MANUS_APPOINTMENT_WEBHOOK) return { configured: false };
-  const response = await fetch(env.MANUS_APPOINTMENT_WEBHOOK, {
-    method: 'POST',
-    headers: { 'content-type': 'application/json' },
-    body: JSON.stringify(payload)
-  });
-  if (!response.ok) throw new Error('Appointment webhook failed');
-  return { configured: true };
-}
-
 export async function onRequestOptions() {
   return new Response(null, { status: 204, headers: corsHeaders });
 }
@@ -192,13 +181,11 @@ export async function onRequestPost({ request, env }) {
 
   const outcomes = await Promise.allSettled([
     sendEmailNotifications(payload, env),
-    logToSheets(payload, env),
-    logToManusWebhook(payload, env)
+    logToSheets(payload, env)
   ]);
   const email = outcomes[0].status === 'fulfilled' ? outcomes[0].value : { configured: false, clinic_sent: false, patient_sent: false };
   const sheets = outcomes[1].status === 'fulfilled' ? outcomes[1].value : { configured: false };
-  const webhook = outcomes[2].status === 'fulfilled' ? outcomes[2].value : { configured: false };
-  const configured = [email.clinic_sent, sheets.configured, webhook.configured].filter(Boolean).length;
+  const configured = [email.clinic_sent, sheets.configured].filter(Boolean).length;
 
   if (configured === 0) return json({ error: 'Appointment routing is not configured.' }, 503);
   const sms = await sendAppointmentSms(payload, env);
