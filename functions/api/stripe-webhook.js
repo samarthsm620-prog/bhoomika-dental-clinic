@@ -21,6 +21,12 @@ function appointmentNumber(session) {
   const suffix = clean(session.id, 12).replace(/[^A-Za-z0-9]/g, '').slice(-6).toUpperCase();
   return `BHC-${datePart}-${suffix || 'PAID'}`;
 }
+function clinicRecipients(env) {
+  return [...new Set([
+    clean(env.CLINIC_EMAIL, 160).toLowerCase(),
+    clean(env.CLINIC_ASSISTANT_EMAIL, 160).toLowerCase()
+  ].filter(Boolean))];
+}
 async function sendEmail(env, params) {
   if (!env.EMAILJS_SERVICE_ID || !env.EMAILJS_TEMPLATE_ID || !env.EMAILJS_PUBLIC_KEY) return false;
   const response = await fetch('https://api.emailjs.com/api/v1.0/email/send', {
@@ -49,9 +55,9 @@ export async function onRequestPost({ request, env }) {
 
   const metadata = session.metadata || {};
   const number = appointmentNumber(session);
-  const clinicEmail = clean(env.CLINIC_EMAIL, 160).toLowerCase();
+  const recipients = clinicRecipients(env);
   const patientEmail = clean(session.customer_details?.email || metadata.patient_email, 160).toLowerCase();
-  if (!clinicEmail || !patientEmail) return json({ error: 'Clinic or patient email is missing.' }, 502);
+  if (!recipients.length || !patientEmail) return json({ error: 'Clinic or patient email is missing.' }, 502);
   const paymentQrUrl = clean(env.CLINIC_PAYMENT_QR_URL, 500);
   const details = [
     `Appointment no.: ${number}`,
@@ -67,10 +73,13 @@ export async function onRequestPost({ request, env }) {
   ].join('\n');
   const qrText = paymentQrUrl ? `\nClinic PhonePe/UPI QR: ${paymentQrUrl}` : '\nClinic payment QR: not configured yet.';
   const common = { appointment_number: number, payment_status: 'succeeded', amount_inr: '100', payment_qr_url: paymentQrUrl, clinic_phone: '+91 9481731482' };
-  let clinicSent = false; let patientSent = false;
-  try { clinicSent = await sendEmail(env, { ...common, to_email: clinicEmail, email_subject: `Payment succeeded — ${number}`, reply_to: patientEmail, recipient_name: 'Bhoomika Dental Clinic team', message_body: `PAID APPOINTMENT\n${details}${qrText}`, patient_first_aid: '' }); } catch (_) {}
-  await delay(1100);
-  try { patientSent = await sendEmail(env, { ...common, to_email: patientEmail, email_subject: `Appointment confirmed — ${number}`, reply_to: clinicEmail, recipient_name: clean(metadata.patient_name, 100), message_body: `Your ₹100 INR appointment payment succeeded.\n\nAppointment no.: ${number}\n${details}${qrText}\n\nThe clinic will contact you if the requested time needs adjustment. This email confirms payment and request receipt; the clinic may still need to confirm availability.`, patient_first_aid: '' }); } catch (_) {}
+  let clinicSent = false; let clinicRecipientsSent = 0; let patientSent = false;
+  for (const clinicEmail of recipients) {
+    try { if (await sendEmail(env, { ...common, to_email: clinicEmail, email_subject: `Payment succeeded — ${number}`, reply_to: patientEmail, recipient_name: 'Bhoomika Dental Clinic team', message_body: `PAID APPOINTMENT\n${details}${qrText}`, patient_first_aid: '' })) clinicRecipientsSent += 1; } catch (_) {}
+    await delay(1100);
+  }
+  clinicSent = clinicRecipientsSent > 0;
+  try { patientSent = await sendEmail(env, { ...common, to_email: patientEmail, email_subject: `Appointment confirmed — ${number}`, reply_to: recipients[0], recipient_name: clean(metadata.patient_name, 100), message_body: `Your ₹100 INR appointment payment succeeded.\n\nAppointment no.: ${number}\n${details}${qrText}\n\nThe clinic will contact you if the requested time needs adjustment. This email confirms payment and request receipt; the clinic may still need to confirm availability.`, patient_first_aid: '' }); } catch (_) {}
   const logged = await logPayment({ ...metadata, request_id: `stripe:${session.id}`, patient_email: patientEmail, appointment_number: number, payment_status: 'succeeded', payment_amount_inr: 100, stripe_session_id: session.id, dental_concern: `${metadata.dental_concern || ''} Payment succeeded; appointment ${number}.` }, env);
-  return json({ ok: true, appointment_number: number, clinic_email_sent: clinicSent, patient_email_sent: patientSent, sheets_logged: logged });
+  return json({ ok: true, appointment_number: number, clinic_email_sent: clinicSent, clinic_recipients_sent: clinicRecipientsSent, patient_email_sent: patientSent, sheets_logged: logged });
 }

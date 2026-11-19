@@ -58,9 +58,17 @@ async function sendEmail(env, templateParams) {
   return response.ok;
 }
 
+function clinicRecipients(env) {
+  return [...new Set([
+    clean(env.CLINIC_EMAIL, 160).toLowerCase(),
+    clean(env.CLINIC_ASSISTANT_EMAIL, 160).toLowerCase()
+  ].filter(Boolean))];
+}
+
 async function sendEmailNotifications(payload, env) {
-  const clinicEmail = clean(env.CLINIC_EMAIL, 160).toLowerCase();
-  if (!env.EMAILJS_SERVICE_ID || !env.EMAILJS_TEMPLATE_ID || !env.EMAILJS_PUBLIC_KEY || !clinicEmail) {
+  const recipients = clinicRecipients(env);
+  const paymentQrUrl = clean(env.CLINIC_PAYMENT_QR_URL, 500);
+  if (!env.EMAILJS_SERVICE_ID || !env.EMAILJS_TEMPLATE_ID || !env.EMAILJS_PUBLIC_KEY || !recipients.length) {
     return { configured: false, clinic_sent: false, patient_sent: false };
   }
 
@@ -75,38 +83,50 @@ async function sendEmailNotifications(payload, env) {
     `Care area: ${payload.specialty}`,
     `Preferred date/time: ${payload.preferred_date || 'Flexible'} ${payload.preferred_time || ''}`.trim(),
     `Concern: ${payload.dental_concern || 'Not specified'}`,
-    `Language: ${payload.language || 'en'}`
+    `Language: ${payload.language || 'en'}`,
+    'Appointment fee: ₹100 INR — pending payment',
+    `PhonePe QR: ${paymentQrUrl || 'Clinic QR not configured'}`
   ].join('\n');
   const firstAid = payload.language === 'kn'
     ? 'ಮುಖದ ತೀವ್ರ ಊತ, ನಿಯಂತ್ರಿಸಲಾಗದ ರಕ್ತಸ್ರಾವ, ಹಲ್ಲಿನ ಗಾಯ, ಅಥವಾ ಉಸಿರಾಟ/ನುಂಗುವ ತೊಂದರೆ ಇದ್ದರೆ ತಕ್ಷಣ ಸ್ಥಳೀಯ ತುರ್ತು ವೈದ್ಯಕೀಯ ನೆರವು ಪಡೆಯಿರಿ. ಇಮೇಲ್ ಉತ್ತರಕ್ಕಾಗಿ ಕಾಯಬೇಡಿ. ಇದು ರೋಗನಿರ್ಣಯ ಅಥವಾ ತುರ್ತು ಸೇವೆಯಲ್ಲ.'
     : 'If you have severe facial swelling, uncontrolled bleeding, a dental injury, or difficulty breathing or swallowing, seek urgent local medical care now. Do not wait for an email reply. This message is not a diagnosis or emergency service.';
 
   let clinicSent = false;
+  let clinicRecipientsSent = 0;
   let patientSent = false;
+  for (const clinicEmail of recipients) {
+    try {
+      const sent = await sendEmail(env, {
+        to_email: clinicEmail,
+        reply_to: payload.patient_email,
+        email_subject: `${careType} — ${payload.patient_name}`,
+        recipient_name: 'Bhoomika Dental Clinic team',
+        appointment_fee_inr: '100',
+        payment_status: 'pending',
+        payment_qr_url: paymentQrUrl,
+        message_body: clinicSummary,
+        patient_first_aid: ''
+      });
+      if (sent) clinicRecipientsSent += 1;
+    } catch { /* Email is reported as incomplete without exposing provider details. */ }
+    await delay(1100);
+  }
+  clinicSent = clinicRecipientsSent > 0;
   try {
-    clinicSent = await sendEmail(env, {
-      to_email: clinicEmail,
-      reply_to: payload.patient_email,
-      email_subject: `${careType} — ${payload.patient_name}`,
-      recipient_name: 'Bhoomika Dental Clinic team',
-      message_body: clinicSummary,
-      patient_first_aid: ''
-    });
-  } catch { /* Email is reported as incomplete without exposing provider details. */ }
-
-  // EmailJS documents a one-request-per-second limit; keep the second send under that limit.
-  await delay(1100);
-  try {
+    const patientClinicEmail = recipients[0];
     patientSent = await sendEmail(env, {
       to_email: payload.patient_email,
-      reply_to: clinicEmail,
+      reply_to: patientClinicEmail,
       email_subject: 'We received your Bhoomika Dental Clinic request',
       recipient_name: payload.patient_name,
-      message_body: `Thank you, ${payload.patient_name}. The clinic has received your ${careType.toLowerCase()} request and will contact you to confirm availability. Please note that this is a request, not a confirmed appointment.\n\n${firstAid}\n\nClinic: +91 9481731482`,
+      appointment_fee_inr: '100',
+      payment_status: 'pending',
+      payment_qr_url: paymentQrUrl,
+      message_body: `Thank you, ${payload.patient_name}. The clinic has received your ${careType.toLowerCase()} request.\n\nAppointment fee: ₹100 INR — payment pending. Scan the PhonePe QR code shown below in this email, then keep the payment receipt. The clinic will verify payment and contact you to confirm availability. This is a request, not a confirmed appointment.\n\nPhonePe QR: ${paymentQrUrl || 'The clinic will provide the QR separately.'}\n\n${firstAid}\n\nClinic: +91 9481731482`,
       patient_first_aid: firstAid
     });
   } catch { /* Keep the clinic's appointment intake available if email delivery fails. */ }
-  return { configured: true, clinic_sent: clinicSent, patient_sent: patientSent };
+  return { configured: true, clinic_sent: clinicSent, clinic_recipients_sent: clinicRecipientsSent, patient_sent: patientSent };
 }
 
 function normalizeMsg91Mobile(value) {
