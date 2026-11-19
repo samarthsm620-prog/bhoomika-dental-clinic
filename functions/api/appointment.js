@@ -128,6 +128,8 @@ async function sendEmail(env, templateParams) {
       service_id: serviceId,
       template_id: templateId,
       user_id: publicKey,
+      // Required when "Allow EmailJS API for non-browser applications" is enabled in the EmailJS dashboard.
+      ...(env.EMAILJS_PRIVATE_KEY ? { accessToken: env.EMAILJS_PRIVATE_KEY } : {}),
       template_params: templateParams
     })
   });
