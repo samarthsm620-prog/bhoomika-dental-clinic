@@ -214,6 +214,8 @@ export async function onRequestPost({ request, env }) {
     request_id: payload.request_id,
     email_configured: Boolean(email.clinic_sent && email.patient_sent),
     email_status: email.configured ? (email.clinic_sent && email.patient_sent ? 'sent' : 'partial') : 'not_configured',
+    clinic_recipients_sent: Number(email.clinic_recipients_sent || 0),
+    patient_email_sent: Boolean(email.patient_sent),
     sheets_logged: Boolean(sheets.configured),
     sms_status: sms.status,
     sms_sent: Boolean(sms.sent),
