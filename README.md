@@ -28,6 +28,8 @@ Clinic emails include contact details and requested time but omit the selected c
 
 Configure `EMAILJS_PUBLIC_KEY`, `CLINIC_EMAIL`, `CLINIC_ASSISTANT_EMAIL`, and `CLINIC_PAYMENT_QR_URL` as Cloudflare Pages production secrets/variables. The service and template IDs are in the appointment function. Use the required EmailJS fields documented in [`EMAILJS-PAYLOAD-CONTRACT.md`](EMAILJS-PAYLOAD-CONTRACT.md). Never commit API keys, email recipient values, or patient data.
 
+`EMAILJS_SERVICE_ID` and `EMAILJS_TEMPLATE_ID` values, if present in Cloudflare, are not read by the current function; the active IDs are pinned in source. `EMAILJS_PRIVATE_KEY` is optional and is sent only when set; add it as a Secret only if the EmailJS account requires private-key access for non-browser API requests. The current synthetic production test succeeded without a private key. The appointment sender is `functions/api/appointment.js`; there is no `mail.js`.
+
 The callback form posts only to the same-origin `/api/callback` Pages Function. To enable callback routing, add `MANUS_CALLBACK_WEBHOOK` under **Cloudflare Dashboard → Workers & Pages → bhoomika-dental-clinic → Settings → Variables and Secrets → Production** as a Secret, then redeploy. Keep the webhook URL out of browser code and public documentation. If a webhook URL was previously committed or exposed in `app.js`, rotate it at its provider before configuring a replacement.
 
 ## Gemini assistant
