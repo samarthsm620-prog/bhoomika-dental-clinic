@@ -1,7 +1,7 @@
 /* Privacy-first analytics consent banner and compact legal-page layout. */
 .cookie-consent {
   position: fixed;
-  inset: auto 1rem 1rem;
+  inset: auto 1rem calc(5.75rem + env(safe-area-inset-bottom));
   z-index: 100;
   max-width: 44rem;
   margin-inline: auto;
