@@ -3,6 +3,6 @@
   "private": true,
   "version": "1.0.0",
   "scripts": {
-    "check": "node --check app.js && node --check functions/api/gemini.js && node --check --input-type=module < functions/api/appointment.js && node --check < google-sheets/Code.gs"
+    "check": "node --check app.js && node --check server.mjs && node --check functions/api/gemini.js && node --check --input-type=module < functions/api/appointment.js && node --check --input-type=module < functions/api/callback.js && node --check < google-sheets/Code.gs"
   }
 }

@@ -1,5 +1,11 @@
-/index.html /
-/home /
-/privacy /privacy-policy.html
-/terms /terms-and-conditions.html
-/terms-of-service /terms-and-conditions.html
+/index.html / 301
+/home / 301
+/privacy /privacy-policy 301
+/privacy/ /privacy-policy 301
+/privacy-policy.html /privacy-policy 301
+/privacy-policy/ /privacy-policy 301
+/terms /terms-and-conditions 301
+/terms/ /terms-and-conditions 301
+/terms-of-service /terms-and-conditions 301
+/terms-and-conditions.html /terms-and-conditions 301
+/terms-and-conditions/ /terms-and-conditions 301

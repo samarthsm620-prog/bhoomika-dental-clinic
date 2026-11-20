@@ -31,3 +31,18 @@
 
 ## Deployment notes
 The site is hosted at `https://bhoomika-dental-clinic.pages.dev`. Pushes to the connected `main` branch trigger a Cloudflare Pages production deployment.
+
+## Website hardening follow-up (2026-11-20)
+- [x] Current source has unique homepage/privacy/terms titles and descriptions, canonical/social metadata, Dentist structured data, SVG/PNG/ICO/touch icons, sitemap, crawler rules (including named AI crawlers), a real noindex 404 page, and permanent canonical redirects.
+- [x] Appointment and callback forms use same-origin Pages Functions. The callback webhook URL has been removed from browser JavaScript and is now read from the `MANUS_CALLBACK_WEBHOOK` runtime secret; rotate the previously exposed provider URL before adding its replacement.
+- [x] Clinic photo WebP derivatives are used only where they are smaller than the current compressed source; the already-smaller dental-specialties PNG remains unchanged. The background videos are preserved.
+- [x] Analytics remains off until a GA4 Measurement ID is supplied; consent is optional, can be reopened from the footer, and is scoped to the configured Measurement ID.
+- [ ] Push and verify the latest source on Pages; test clean legal URLs, HTTPS redirect/HSTS, robots, sitemap, icon/social assets, custom 404, image responses, and mobile rendering on the live domain.
+- [ ] Google Search Console verification, sitemap submission, and homepage indexing request require the clinic owner's Google sign-in and the verification method/token for the current `pages.dev` URL-prefix property.
+- [ ] Bing Webmaster Tools verification and sitemap submission require an authorized account; the homepage must remain publicly crawlable.
+- [ ] GA4 setup requires the clinic-owned property's `G-...` Measurement ID and privacy approval; add it to the homepage `data-ga-measurement-id` only after consent language and policy are approved.
+- [ ] Google Business Profile must be claimed/created by an authorized clinic representative after confirming the exact name, address/map pin or service area, category, phone, hours, website, and clinic's eligibility; Google verification cannot be bypassed.
+- [x] Local mobile Lighthouse after responsive-image changes: performance 0.78, LCP 3.5 s, FCP 2.7 s, TBT 350 ms, CLS 0.005. This local Node preview does not include Cloudflare compression/CDN behavior and is not field/Core Web Vitals data.
+- [ ] Run PageSpeed/Lighthouse against the live deployment and verify on a real phone after publication.
+- [ ] Have the clinic's authorized owner/privacy reviewer approve the privacy and terms text, actual processors, retention and contact details before treating them as final policy.
+- [ ] Current GitHub `main` explicitly marks Google Sheets booking logging as legacy/not used and SMS as not offered. Neither Sheets storage nor MSG91 delivery is active; restoring either is a separate integration change and requires the clinic's explicit architecture choice and provider configuration.

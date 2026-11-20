@@ -1,4 +1,3 @@
-const CALLBACK_WEBHOOK = 'https://api.manus.im/api/webhook/triggers/4d03e54a-29c5-4948-a3dc-32f5596b279c';
 const KNOWLEDGE_URL = 'clinic-knowledge.json';
 const CLINIC_PHONE = '919481731482';
 
@@ -20,9 +19,16 @@ function setStatus(element, message, kind = '') {
   element.className = `form-status${kind ? ` ${kind}` : ''}`;
 }
 
-async function postWebhook(url, payload) {
-  // The Trigger webhook accepts JSON; CORS is enabled on the live endpoint.
-  return fetch(url, { method: 'POST', mode: 'cors', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload), keepalive: true });
+async function postCallback(payload) {
+  const response = await fetch('/api/callback', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+    keepalive: true
+  });
+  const result = await response.json().catch(() => ({}));
+  if (!response.ok || !result.ok) throw new Error(result.error || 'Callback routing is unavailable.');
+  return result;
 }
 
 async function submitAppointment(payload) {
@@ -290,7 +296,7 @@ function initCallback() {
     if (payload.website) return;
     delete payload.website;
     try {
-      await postWebhook(CALLBACK_WEBHOOK, payload);
+      await postCallback(payload);
       setStatus(status, 'Received — the clinic will call you back soon.', 'success');
       form.reset();
     } catch (error) {
@@ -460,8 +466,8 @@ function initVoice() {
 function initCookieConsent() {
   const banner = $('#cookie-consent');
   if (!banner) return;
-  const key = 'bhoomika-analytics-consent-v1';
   const measurementId = document.documentElement.dataset.gaMeasurementId?.trim();
+  const key = `bhoomika-analytics-consent-v1:${measurementId || 'unconfigured'}`;
   const loadAnalytics = () => {
     if (!measurementId || window.__bhoomikaAnalyticsLoaded) return;
     window.__bhoomikaAnalyticsLoaded = true;
@@ -485,6 +491,10 @@ function initCookieConsent() {
   if (!consent) banner.hidden = false;
   $('#cookie-accept')?.addEventListener('click', () => save('accepted'));
   $('#cookie-essential')?.addEventListener('click', () => save('essential'));
+  $('#cookie-settings')?.addEventListener('click', () => {
+    banner.hidden = false;
+    $('#cookie-accept')?.focus();
+  });
 }
 
 async function loadDisorders() { try { disorders = await fetch('oral-disorders.json').then((response) => response.json()); } catch { disorders = []; } }

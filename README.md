@@ -28,6 +28,8 @@ Clinic emails include contact details and requested time but omit the selected c
 
 Configure `EMAILJS_PUBLIC_KEY`, `CLINIC_EMAIL`, `CLINIC_ASSISTANT_EMAIL`, and `CLINIC_PAYMENT_QR_URL` as Cloudflare Pages production secrets/variables. The service and template IDs are in the appointment function. Use the required EmailJS fields documented in [`EMAILJS-PAYLOAD-CONTRACT.md`](EMAILJS-PAYLOAD-CONTRACT.md). Never commit API keys, email recipient values, or patient data.
 
+The callback form posts only to the same-origin `/api/callback` Pages Function. To enable callback routing, add `MANUS_CALLBACK_WEBHOOK` under **Cloudflare Dashboard → Workers & Pages → bhoomika-dental-clinic → Settings → Variables and Secrets → Production** as a Secret, then redeploy. Keep the webhook URL out of browser code and public documentation. If a webhook URL was previously committed or exposed in `app.js`, rotate it at its provider before configuring a replacement.
+
 ## Gemini assistant
 
 The browser calls the `/api/gemini` Pages Function using the currently listed `gemini-3.5-flash-lite` model ([official model list](https://ai.google.dev/gemini-api/docs/models)). `GEMINI_API_KEY` must be set as an encrypted Pages secret. If Gemini is unavailable, the assistant clearly says it is showing local clinic facts instead. The clinic-knowledge rules prohibit symptom diagnosis or recommending a procedure from symptoms alone.

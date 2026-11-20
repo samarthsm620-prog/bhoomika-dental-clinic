@@ -5,20 +5,47 @@ Disallow: /functions/
 
 User-agent: Googlebot
 Allow: /
+Disallow: /api/
+Disallow: /functions/
 
 User-agent: Bingbot
 Allow: /
+Disallow: /api/
+Disallow: /functions/
 
 User-agent: GPTBot
 Allow: /
+Disallow: /api/
+Disallow: /functions/
+
+User-agent: OAI-SearchBot
+Allow: /
+Disallow: /api/
+Disallow: /functions/
+
+User-agent: ChatGPT-User
+Allow: /
+Disallow: /api/
+Disallow: /functions/
 
 User-agent: ClaudeBot
 Allow: /
+Disallow: /api/
+Disallow: /functions/
+
+User-agent: Claude-SearchBot
+Allow: /
+Disallow: /api/
+Disallow: /functions/
 
 User-agent: PerplexityBot
 Allow: /
+Disallow: /api/
+Disallow: /functions/
 
 User-agent: Google-Extended
 Allow: /
+Disallow: /api/
+Disallow: /functions/
 
 Sitemap: https://bhoomika-dental-clinic.pages.dev/sitemap.xml
