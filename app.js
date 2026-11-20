@@ -65,6 +65,44 @@ function buildWhatsAppUrl(payload) {
   return `https://wa.me/${CLINIC_PHONE}?text=${encodeURIComponent(lines.join('\n'))}`;
 }
 
+function initDeferredVideos() {
+  const videos = $$('video[data-deferred-video]');
+  if (!videos.length || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+  const loadVideo = (video) => {
+    if (video.dataset.videoLoaded) return;
+    $$('source[data-src]', video).forEach((source) => {
+      source.src = source.dataset.src;
+      delete source.dataset.src;
+    });
+    video.dataset.videoLoaded = 'true';
+    video.load();
+    video.play()?.catch(() => {});
+  };
+
+  const schedule = () => {
+    const hero = $('.hero-video[data-deferred-video]');
+    if (hero) window.setTimeout(() => loadVideo(hero), 4500);
+
+    const remaining = videos.filter((video) => video !== hero);
+    if ('IntersectionObserver' in window) {
+      const observer = new IntersectionObserver((entries) => {
+        entries.forEach((entry) => {
+          if (!entry.isIntersecting) return;
+          loadVideo(entry.target);
+          observer.unobserve(entry.target);
+        });
+      }, { rootMargin: '240px 0px' });
+      remaining.forEach((video) => observer.observe(video));
+    } else {
+      window.setTimeout(() => remaining.forEach(loadVideo), 8000);
+    }
+  };
+
+  if (document.readyState === 'complete') schedule();
+  else window.addEventListener('load', schedule, { once: true });
+}
+
 function initNavigation() {
   const toggle = $('.menu-toggle');
   const nav = $('#site-nav');
@@ -498,5 +536,5 @@ function initCookieConsent() {
 }
 
 async function loadDisorders() { try { disorders = await fetch('oral-disorders.json').then((response) => response.json()); } catch { disorders = []; } }
-async function boot() { initCookieConsent(); initNavigation(); initHeroMedia(); initLanguage(); initBooking(); initCheckup(); initCallback(); initFeedback(); initSpecialtyCards(); await Promise.all([loadKnowledge(), loadDisorders()]); initSearch(); initConditions(); initVoice(); }
+async function boot() { initCookieConsent(); initDeferredVideos(); initNavigation(); initHeroMedia(); initLanguage(); initBooking(); initCheckup(); initCallback(); initFeedback(); initSpecialtyCards(); await Promise.all([loadKnowledge(), loadDisorders()]); initSearch(); initConditions(); initVoice(); }
 boot();
