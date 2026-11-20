@@ -1,3 +1,4 @@
+import { sheet, sendEmail, recipients, reviewLink, delay as wfDelay, FEE, CLINIC_PHONE } from '../_lib/workflow.js';
 const SITE_ORIGIN = 'https://bhoomika-dental-clinic.pages.dev';
 const CLINIC_ADDRESS = 'TMC Complex, Badami, Karnataka, India';
 const DEFAULT_QR_URL = `${SITE_ORIGIN}/images/payment/phonepe-appointment-qr.jpeg`;
@@ -116,131 +117,39 @@ function buildCalendarLink(payload, appointmentNumber) {
   return `https://calendar.google.com/calendar/render?${params.toString()}`;
 }
 
-async function sendEmail(env, templateParams) {
-  const serviceId = 'service_oz00kf3';
-  const templateId = 'template_lb2zn9m';
-  const publicKey = env.EMAILJS_PUBLIC_KEY;
-  if (!publicKey) return { accepted: false, status: 0 };
-  const response = await fetch('https://api.emailjs.com/api/v1.0/email/send', {
-    method: 'POST',
-    headers: { 'content-type': 'application/json', origin: SITE_ORIGIN, referer: `${SITE_ORIGIN}/` },
-    body: JSON.stringify({
-      service_id: serviceId,
-      template_id: templateId,
-      user_id: publicKey,
-      // Required when "Allow EmailJS API for non-browser applications" is enabled in the EmailJS dashboard.
-      ...(env.EMAILJS_PRIVATE_KEY ? { accessToken: env.EMAILJS_PRIVATE_KEY } : {}),
-      template_params: templateParams
-    })
-  });
-  return { accepted: response.ok, status: response.status };
-}
-
-function clinicRecipients(env) {
-  const doctor = clean(env.CLINIC_EMAIL, 160).toLowerCase();
-  const assistant = clean(env.CLINIC_ASSISTANT_EMAIL, 160).toLowerCase();
-  const validAddress = (value) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
-  return [...new Set([doctor, assistant].filter(validAddress))];
-}
-
-async function sendEmailNotifications(payload, appointmentNumber, env) {
-  const recipients = clinicRecipients(env);
-  const doctorEmail = clean(env.CLINIC_EMAIL, 160).toLowerCase();
-  const paymentQrUrl = clean(env.CLINIC_PAYMENT_QR_URL, 500) || DEFAULT_QR_URL;
-  if (!env.EMAILJS_PUBLIC_KEY || recipients.length !== 2) {
-    return { configured: false, clinic_recipients_expected: 2, clinic_recipients_accepted: 0, patient_email_accepted: false };
-  }
-
-  const careType = 'appointment request';
+async function notify(payload, appointmentNumber, env) {
+  const { doctor, assistant } = recipients(env);
   const preferred = [payload.preferred_date, payload.preferred_time].filter(Boolean).join(' ') || 'Flexible';
   const calendarLink = buildCalendarLink(payload, appointmentNumber);
-  const clinicSummary = [
-    'NEW APPOINTMENT REQUEST — NOT CONFIRMED',
-    `Request number: ${appointmentNumber}`,
-    `Patient: ${payload.patient_name}`,
-    `Phone: ${payload.patient_phone}`,
-    `Email: ${payload.patient_email}`,
-    'Request type: appointment coordination',
-    `Preferred date/time (IST, requested only): ${preferred}`,
-    `Payment: ₹${APPOINTMENT_FEE_INR} INR — pending manual PhonePe verification`,
-    `Clinic: ${CLINIC_ADDRESS}`,
-    `PhonePe QR: ${paymentQrUrl}`,
-    'The clinic must confirm availability and verify payment before this becomes a confirmed appointment.'
+  const approve = await reviewLink(env, appointmentNumber, 'approve');
+  const decline = await reviewLink(env, appointmentNumber, 'decline');
+  const details = [
+    `Request number: ${appointmentNumber}`, `Patient: ${payload.patient_name}`, `Phone: ${payload.patient_phone}`,
+    `Email: ${payload.patient_email}`, `Care area: ${payload.specialty}`, `Preferred (IST, requested only): ${preferred}`
   ].join('\n');
+  const accepted = { doctor: false, assistant: false, patient: false };
 
-  const clinicParams = (clinicEmail) => ({
-    to_email: clinicEmail,
-    reply_to: payload.patient_email,
-    email_subject: `${careType} — ${appointmentNumber}`,
-    recipient_name: 'Bhoomika Dental Clinic team',
-    appointment_number: appointmentNumber,
-    appointment_fee_inr: APPOINTMENT_FEE_INR,
-    payment_status: 'pending — manual PhonePe verification',
-    payment_qr_url: paymentQrUrl,
-    calendar_link: calendarLink,
-    message_body: clinicSummary,
-    patient_first_aid: ''
+  accepted.doctor = await sendEmail(env, {
+    to_email: doctor, reply_to: payload.patient_email, email_subject: `Verify appointment request — ${appointmentNumber}`,
+    appointment_number: appointmentNumber, payment_status: 'awaiting doctor verification',
+    message_body: `NEW APPOINTMENT REQUEST — NEEDS YOUR VERIFICATION\n${details}\n\nApprove (patient is then asked to pay ₹${FEE_TEXT}):\n${approve}\n\nDecline:\n${decline}`
   });
-
-  let clinicRecipientsAccepted = 0;
-  for (const clinicEmail of recipients) {
-    try {
-      const result = await sendEmail(env, clinicParams(clinicEmail));
-      if (result.accepted) clinicRecipientsAccepted += 1;
-    } catch { /* Report provider acceptance accurately; do not claim inbox delivery. */ }
-    await delay(1100);
-  }
-
-  const firstAid = payload.language === 'kn'
-    ? 'ಮುಖದ ತೀವ್ರ ಊತ, ನಿಯಂತ್ರಿಸಲಾಗದ ರಕ್ತಸ್ರಾವ, ಹಲ್ಲಿನ ಗಾಯ, ಅಥವಾ ಉಸಿರಾಟ/ನುಂಗುವ ತೊಂದರೆ ಇದ್ದರೆ ತಕ್ಷಣ ಸ್ಥಳೀಯ ತುರ್ತು ವೈದ್ಯಕೀಯ ನೆರವು ಪಡೆಯಿರಿ. ಇದು ರೋಗನಿರ್ಣಯ ಅಥವಾ ತುರ್ತು ಸೇವೆಯಲ್ಲ.'
-    : 'For severe facial swelling, uncontrolled bleeding, a dental injury, or difficulty breathing or swallowing, seek urgent local medical care. This email is not a diagnosis or emergency service.';
-  const clinicDeliveryGuidance = clinicRecipientsAccepted === 0
-    ? 'The email service accepted no clinic notification request. Please call the clinic before paying.'
-    : clinicRecipientsAccepted < recipients.length
-      ? `The email service accepted only ${clinicRecipientsAccepted}/${recipients.length} clinic notification requests. Delivery is not verified; please call the clinic before paying.`
-      : 'The email service accepted the clinic notification requests, but delivery is not verified. The clinic must confirm availability before an appointment is confirmed.';
-  const calendarText = calendarLink
-    ? `\n\nAdd a tentative placeholder for the requested time to your calendar (this is not a confirmed appointment): ${calendarLink}`
-    : '';
-  const patientMessage = [
-    `Thank you, ${payload.patient_name}. Your request reference is ${appointmentNumber}.`,
-    `Request number: ${appointmentNumber}`,
-    `Requested date/time (IST): ${preferred}`,
-    `Clinic: Bhoomika Dental Clinic, ${CLINIC_ADDRESS}`,
-    'This email confirms that the website generated a request reference; it does not confirm clinic receipt, appointment availability, or payment.',
-    clinicDeliveryGuidance,
-    `Appointment fee: ₹${APPOINTMENT_FEE_INR} INR — payment pending. Scan the PhonePe QR only after the clinic confirms availability, and keep the payment receipt. The clinic must verify payment manually.`,
-    `PhonePe QR: ${paymentQrUrl}`,
-    `Clinic phone: +91 9481731482`,
-    firstAid
-  ].join('\n') + calendarText;
-
-  let patientEmailAccepted = false;
-  try {
-    const result = await sendEmail(env, {
-      to_email: payload.patient_email,
-      reply_to: doctorEmail,
-      email_subject: `Request received — ${appointmentNumber}`,
-      recipient_name: payload.patient_name,
-      appointment_number: appointmentNumber,
-      appointment_fee_inr: APPOINTMENT_FEE_INR,
-      payment_status: 'pending — manual PhonePe verification',
-      payment_qr_url: paymentQrUrl,
-      calendar_link: calendarLink,
-      message_body: patientMessage,
-      patient_first_aid: firstAid
-    });
-    patientEmailAccepted = result.accepted;
-  } catch { /* EmailJS acceptance is not a delivery receipt. */ }
-
-  return {
-    configured: true,
-    clinic_recipients_expected: recipients.length,
-    clinic_recipients_accepted: clinicRecipientsAccepted,
-    patient_email_accepted: patientEmailAccepted
-  };
+  await delay(1100);
+  accepted.assistant = await sendEmail(env, {
+    to_email: assistant, reply_to: payload.patient_email, email_subject: `New request (awaiting doctor) — ${appointmentNumber}`,
+    appointment_number: appointmentNumber, payment_status: 'awaiting doctor verification',
+    message_body: `FYI — new appointment request, forwarded to the doctor for verification.\n${details}`
+  });
+  await delay(1100);
+  accepted.patient = await sendEmail(env, {
+    to_email: payload.patient_email, reply_to: doctor, email_subject: `Request received — ${appointmentNumber}`,
+    recipient_name: payload.patient_name, appointment_number: appointmentNumber, payment_status: 'awaiting doctor verification',
+    calendar_link: calendarLink,
+    message_body: `Thank you, ${payload.patient_name}. Your appointment request ${appointmentNumber} has been received by Bhoomika Dental Clinic.\nRequested (IST): ${preferred}\n\nThe doctor will verify your request first. You will get another email once you are registered, with the ₹${FEE_TEXT} payment QR. Please do not pay before then.\nThis is not a confirmed appointment. Clinic phone: ${CLINIC_PHONE}`
+  });
+  return accepted;
 }
-
+const FEE_TEXT = FEE;
 export async function onRequestOptions() {
   return new Response(null, { status: 204, headers: corsHeaders });
 }
@@ -278,49 +187,30 @@ export async function onRequestPost({ request, env }) {
   recentRequests.set(requestKey, { created_at: now, status: 'pending' });
 
   const appointmentNumber = createAppointmentNumber();
-  let email;
-  try {
-    email = await sendEmailNotifications(payload, appointmentNumber, env);
-  } catch {
-    email = { configured: Boolean(env.EMAILJS_PUBLIC_KEY), clinic_recipients_expected: 2, clinic_recipients_accepted: 0, patient_email_accepted: false };
-  }
-  const acceptedCount = Number(email.clinic_recipients_accepted || 0) + Number(Boolean(email.patient_email_accepted));
-  const expectedCount = Number(email.clinic_recipients_expected || 0) + 1;
-  const emailStatus = !email.configured
-    ? 'not_configured'
-    : acceptedCount === expectedCount
-      ? 'accepted'
-      : acceptedCount > 0
-        ? 'partial'
-        : 'failed';
-
-  if (acceptedCount === 0) {
-    const errorBody = {
-      ok: false,
-      appointment_number: appointmentNumber,
-      email_status: emailStatus,
-      error: emailStatus === 'not_configured'
-        ? 'Appointment email service or required clinic recipient is not configured. Please call the clinic.'
-        : 'The email service did not accept the appointment messages. Please call the clinic.'
-    };
+  const saved = await sheet(env, 'create', {
+    appointment_no: appointmentNumber, patient_name: payload.patient_name, patient_email: payload.patient_email, phone: payload.patient_phone,
+    care_area: payload.specialty, preferred_date: payload.preferred_date, preferred_time: payload.preferred_time,
+    note: payload.dental_concern, language: payload.language, source: clean(input?.source, 64) || 'website-form'
+  });
+  const { doctor, assistant } = recipients(env);
+  if (!saved.ok || !env.EMAILJS_PUBLIC_KEY || !env.WORKFLOW_SECRET || !doctor || !assistant || doctor === assistant) {
     recentRequests.delete(requestKey);
-    return json(errorBody, emailStatus === 'not_configured' ? 503 : 502);
+    return json({ ok: false, appointment_number: appointmentNumber, error: 'Booking service is not fully set up yet. Please call the clinic on +91 9481731482.' }, 503);
   }
-
+  const accepted = await notify(payload, appointmentNumber, env);
+  if (!accepted.doctor) {
+    recentRequests.delete(requestKey);
+    return json({ ok: false, appointment_number: appointmentNumber, error: 'We could not reach the doctor by email. Please call +91 9481731482.' }, 502);
+  }
   const resultBody = {
     ok: true,
     appointment_number: appointmentNumber,
-    email_provider: 'EmailJS',
-    email_status: emailStatus,
-    clinic_recipients_expected: email.clinic_recipients_expected,
-    clinic_recipients_accepted: email.clinic_recipients_accepted,
-    patient_email_accepted: Boolean(email.patient_email_accepted),
+    stage: 'awaiting_doctor_verification',
+    doctor_email_accepted: accepted.doctor,
+    assistant_email_accepted: accepted.assistant,
+    patient_email_accepted: accepted.patient,
     delivery_verified: false,
-    payment_status: 'pending_manual_phonepe_verification',
-    payment_qr_url: clean(env.CLINIC_PAYMENT_QR_URL, 500) || DEFAULT_QR_URL,
-    message: email.clinic_recipients_accepted === 0
-      ? 'A request reference was generated, but EmailJS accepted no clinic notification request. Call the clinic before paying; no appointment is confirmed.'
-      : `EmailJS accepted ${email.clinic_recipients_accepted}/${email.clinic_recipients_expected} clinic notification requests; delivery is not verified. The clinic must confirm availability and manually verify payment.`
+    message: `Request ${appointmentNumber} received. The doctor will verify it; you will then get an email asking for the ₹100 payment. This is not a confirmed appointment.`
   };
   recentRequests.set(requestKey, { created_at: now, status: 200, body: resultBody });
   return json(resultBody);

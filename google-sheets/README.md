@@ -1,7 +1,10 @@
-# Legacy Google Sheets webhook (not used by current appointment intake)
+# Google Sheets booking store
 
-The current booking flow is `POST /api/appointment` and uses EmailJS only. It does not call Google Sheets, Apps Script, or any booking/payment webhook. Do not deploy this receiver or configure its webhook secrets for appointment intake unless the clinic owner explicitly requests a separate, persistent record system.
+System of record for the staged booking flow (requested → approved → payment_claimed → confirmed).
 
-`Code.gs` is retained only as legacy source reference. It is not invoked by the current Pages Function. The current appointment reference (`BHC-YYYYMMDD-XXXXXXXX`) is included in EmailJS messages but is not backed by a durable database; the limitation is described in the main [`README.md`](../README.md).
+1. Open the spreadsheet **Bhoomika Dental Clinic — Bookings** (Google Drive), Extensions > Apps Script, paste `Code.gs`.
+2. Project Settings > Script Properties: `SHEET_ID` = the spreadsheet ID from its URL, `WEBHOOK_TOKEN` = a long random string.
+3. Deploy > New deployment > Web app > Execute as **Me**, access **Anyone**. Copy the `/exec` URL.
+4. Cloudflare Pages secrets: `SHEETS_WEBAPP_URL` = that URL, `SHEETS_TOKEN` = the same random string.
 
-The website's separate callback flow is not part of appointment processing. Do not use this legacy guide to alter that flow.
+The sheet holds patient contact details and the free-text note: keep it private to the clinic.

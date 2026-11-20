@@ -245,41 +245,10 @@ function initBooking() {
     if (paymentPanel) paymentPanel.hidden = true;
     try {
       const automation = await submitAppointment(payload);
-      const qrUrl = automation.payment_qr_url;
-      if (qrUrl) {
-        try {
-          const safeQrUrl = new URL(qrUrl, window.location.href);
-          if (safeQrUrl.protocol === 'https:' && !safeQrUrl.username && !safeQrUrl.password) {
-            const qrImage = $('#booking-payment img');
-            const qrLink = $('#booking-payment a');
-            if (qrImage) qrImage.src = safeQrUrl.href;
-            if (qrLink) qrLink.href = safeQrUrl.href;
-          }
-        } catch { /* The local QR remains the safe fallback. */ }
-      }
-      const emailStatus = automation.email_status || 'not_configured';
-      const appointmentNumber = automation.appointment_number || 'not available';
-      const clinicAccepted = Number(automation.clinic_recipients_accepted || 0);
-      const clinicExpected = Number(automation.clinic_recipients_expected || 0);
-      const patientAccepted = Boolean(automation.patient_email_accepted);
-      const allClinicAccepted = clinicExpected > 0 && clinicAccepted === clinicExpected;
-      const acceptedDetails = `EmailJS accepted ${clinicAccepted}/${clinicExpected} clinic email requests and ${patientAccepted ? 'the patient email request' : 'did not accept the patient email request'}. Provider acceptance does not verify inbox delivery.`;
-      const emailMessage = emailStatus === 'accepted'
-        ? acceptedDetails
-        : emailStatus === 'partial'
-          ? `EmailJS accepted only part of the notification requests. ${acceptedDetails} ${allClinicAccepted ? 'Please call the clinic if you need the patient email resent.' : 'Please call the clinic before paying.'}`
-          : 'The email service did not confirm accepting the notification requests. Please call the clinic to make sure the request is received.';
-      const paymentGuidance = allClinicAccepted
-        ? 'This is a request, not a confirmed appointment. The ₹100 PhonePe payment is pending manual verification; wait for the clinic to confirm availability.'
-        : 'This is a request, not a confirmed appointment. Call the clinic before paying; PhonePe payment has not been verified.';
-      const requestMessage = `Request number: ${appointmentNumber}. ${emailMessage} ${paymentGuidance}`;
-      const statusKind = emailStatus === 'accepted' ? 'success' : emailStatus === 'partial' ? 'warning' : 'error';
-      setStatus(status, requestMessage, statusKind);
-      if (confirmation) {
-        confirmation.hidden = false;
-        confirmation.textContent = requestMessage;
-      }
-      if (paymentPanel) paymentPanel.hidden = !allClinicAccepted;
+      const requestMessage = `Request number: ${automation.appointment_number}. ${automation.message || ''} Check your email (and spam folder) for updates.`;
+      setStatus(status, requestMessage, 'success');
+      if (confirmation) { confirmation.hidden = false; confirmation.textContent = requestMessage; }
+      // The PhonePe QR is only shown in the email the patient gets AFTER the doctor verifies the request.
       form.reset();
     } catch (error) {
       if (confirmation) confirmation.hidden = false;
@@ -438,11 +407,20 @@ function setAssistantMode(mode) {
   label.dataset.state = mode;
 }
 
+const assistantHistory = [];
+function applyBooking(b) {
+  const set = (id, v) => { const el = $(id); if (el && v) { el.value = v; el.dispatchEvent(new Event('input', { bubbles: true })); } };
+  set('#patientName', b.patient_name); set('#patientPhone', b.patient_phone); set('#patientEmail', b.patient_email);
+  set('#preferredDate', b.preferred_date); const t = $('input[name="preferred_time"]'); if (t && b.preferred_time) t.value = b.preferred_time;
+  const sel = $('#careArea'); if (sel && b.care_area) { const o = [...sel.options].find((x) => x.text.toLowerCase().includes(b.care_area.toLowerCase().slice(0, 12))); if (o) sel.value = o.value; }
+  $('#booking-panel')?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+}
+
 async function askAssistant(prompt) {
   setAssistantMode('checking');
   try {
-    const response = await fetch('/api/gemini', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ prompt, language: currentLanguage === 'kn' ? 'Kannada' : 'English' }) });
-    if (response.ok) { const data = await response.json(); if (data.text) { setAssistantMode('online'); return data.text; } }
+    const response = await fetch('/api/gemini', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ prompt, history: assistantHistory, language: currentLanguage === 'kn' ? 'Kannada' : 'English' }) });
+    if (response.ok) { const data = await response.json(); if (data.text) { setAssistantMode('online'); assistantHistory.push({ role: 'user', text: prompt }, { role: 'model', text: data.text }); if (assistantHistory.length > 8) assistantHistory.splice(0, 2); if (data.booking) applyBooking(data.booking); return data.text; } }
   } catch { /* local fallback is intentional */ }
   setAssistantMode('offline');
   return localAnswer(prompt);
@@ -538,3 +516,27 @@ function initCookieConsent() {
 async function loadDisorders() { try { disorders = await fetch('oral-disorders.json').then((response) => response.json()); } catch { disorders = []; } }
 async function boot() { initCookieConsent(); initDeferredVideos(); initNavigation(); initHeroMedia(); initLanguage(); initBooking(); initCheckup(); initCallback(); initFeedback(); initSpecialtyCards(); await Promise.all([loadKnowledge(), loadDisorders()]); initSearch(); initConditions(); initVoice(); }
 boot();
+
+// Patient lands here from the "You are registered" email (?pay=BHC-...&sig=...) to report their PhonePe payment reference.
+function initPayReport() {
+  const q = new URLSearchParams(location.search);
+  const id = q.get('pay'), sig = q.get('sig');
+  if (!id || !sig || !/^BHC-\d{8}-[A-Z0-9]{8}$/.test(id)) return;
+  const box = document.createElement('section');
+  box.className = 'shell'; box.setAttribute('role', 'dialog'); box.setAttribute('aria-label', 'Report your payment');
+  box.style.cssText = 'position:fixed;inset:auto 16px 16px 16px;max-width:460px;margin:auto;z-index:60;background:#fff;border:2px solid #112b55;border-radius:16px;padding:20px;box-shadow:0 12px 40px rgba(0,0,0,.25)';
+  box.innerHTML = '<h2 style="margin:0 0 8px;font-size:1.15rem">Report your ₹100 payment</h2><p style="margin:0 0 10px"></p><input id="pay-ref" placeholder="UTR / transaction ID" maxlength="60" style="width:100%;padding:10px;margin-bottom:10px"><button type="button" id="pay-send">I have paid</button><p id="pay-msg" role="status" style="margin:10px 0 0"></p>';
+  box.querySelector('p').textContent = `Appointment ${id}. Enter the reference from your PhonePe receipt after paying.`;
+  document.body.append(box);
+  box.querySelector('#pay-send').addEventListener('click', async () => {
+    const msg = box.querySelector('#pay-msg');
+    msg.textContent = 'Sending…';
+    try {
+      const res = await fetch('/api/paid', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id, sig, payment_ref: box.querySelector('#pay-ref').value }) });
+      const data = await res.json().catch(() => ({}));
+      msg.textContent = data.message || data.error || 'Could not send. Please call the clinic.';
+      if (res.ok) box.querySelector('#pay-send').disabled = true;
+    } catch { msg.textContent = 'Could not send. Please call +91 9481731482.'; }
+  });
+}
+document.addEventListener('DOMContentLoaded', initPayReport);

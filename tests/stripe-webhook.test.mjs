@@ -4,10 +4,11 @@ import { onRequestPost } from '../functions/api/stripe-webhook.js';
 import { onRequestPost as checkout } from '../functions/api/checkout.js';
 
 const secret = 'whsec_test';
-const env = { STRIPE_WEBHOOK_SECRET: secret, EMAILJS_PUBLIC_KEY: 'pk', CLINIC_EMAIL: 'drlatamabrumkar@gmail.com', CLINIC_ASSISTANT_EMAIL: 'assistant@example.com', STRIPE_SECRET_KEY: 'sk_test' };
+const env = { STRIPE_WEBHOOK_SECRET: secret, EMAILJS_PUBLIC_KEY: 'pk', CLINIC_EMAIL: 'drlatamabrumkar@gmail.com', CLINIC_ASSISTANT_EMAIL: 'assistant@example.com', STRIPE_SECRET_KEY: 'sk_test', WORKFLOW_SECRET: 'w', SHEETS_WEBAPP_URL: 'https://script.test/exec', SHEETS_TOKEN: 't' };
 const sent = [];
 globalThis.fetch = async (url, init) => {
   if (String(url).includes('emailjs')) { sent.push(JSON.parse(init.body).template_params); return new Response('OK'); }
+  if (String(url).includes('script.test')) return Response.json({ ok: true, booking: {} });
   if (String(url).includes('stripe.com')) { sent.stripeBody = init.body.toString(); return Response.json({ url: 'https://checkout.stripe.com/c/pay/cs_test' }); }
 };
 const event = (over = {}) => JSON.stringify({ type: 'checkout.session.completed', created: Math.floor(Date.now() / 1000), data: { object: { payment_status: 'paid', currency: 'inr', amount_total: 10000, client_reference_id: 'BHC-20261119-ABCDEF12', customer_email: 'patient@example.com', metadata: { appointment_number: 'BHC-20261119-ABCDEF12', patient_name: 'TEST ONLY Patient' }, ...over } } });

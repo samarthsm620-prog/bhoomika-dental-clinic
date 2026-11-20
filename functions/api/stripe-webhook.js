@@ -1,5 +1,6 @@
 // Stripe webhook: on a verified, paid ₹100 checkout, email "payment successful" to the patient and clinic via EmailJS.
 // Secrets (Cloudflare Pages): STRIPE_WEBHOOK_SECRET, EMAILJS_PUBLIC_KEY, CLINIC_EMAIL, CLINIC_ASSISTANT_EMAIL; optional EMAILJS_PRIVATE_KEY
+import { sheet, reviewLink, recipients, delay } from '../_lib/workflow.js';
 const SITE_ORIGIN = 'https://bhoomika-dental-clinic.pages.dev';
 const EXPECTED_AMOUNT_PAISE = 10000;
 const TOLERANCE_SECONDS = 300;
@@ -50,9 +51,13 @@ export async function onRequestPost({ request, env }) {
     appointment_number: appt, appointment_fee_inr: '100', payment_status: 'PAID — payment succeeded',
     payment_qr_url: '', calendar_link: '', patient_first_aid: ''
   };
-  const doctor = clean(env.CLINIC_EMAIL, 160).toLowerCase();
-  const assistant = clean(env.CLINIC_ASSISTANT_EMAIL, 160).toLowerCase();
+  const { doctor, assistant } = recipients(env);
   const results = { patient: false, clinic: 0 };
+
+  // Record the online payment; only an approved booking can move to paid_online.
+  const saved = await sheet(env, 'transition', { appointment_no: appt, to: 'paid_online', payment_ref: 'stripe:' + clean(s.payment_intent || s.id, 80), payment_claimed_at: new Date().toISOString() });
+  if (!saved.ok && saved.error !== 'bad_state') return Response.json({ received: true, sheet: saved.error }, { status: 502 }); // Stripe will retry
+  if (saved.unchanged) return Response.json({ received: true, duplicate: true });
 
   if (email) {
     results.patient = await sendEmail(env, {
@@ -62,19 +67,21 @@ export async function onRequestPost({ request, env }) {
         `Hello ${name}, your payment of ₹100 INR was successful.`,
         `Appointment number: ${appt}`, `Paid on (IST): ${paidAt}`,
         'Clinic: Bhoomika Dental Clinic, TMC Complex, Badami, Karnataka, India', 'Clinic phone: +91 9481731482',
-        'The clinic will confirm your appointment time. Please keep this email as your receipt.'
+        'The doctor will now confirm your appointment and you will get the final details by email.'
       ].join('\n')
     }).catch(() => false);
   }
-  for (const to of [...new Set([doctor, assistant].filter(Boolean))]) {
+  const confirmLink = await reviewLink(env, appt, 'confirm');
+  for (const [to, isDoctor] of [[doctor, true], [assistant, false]]) {
+    if (!to) continue;
     const ok = await sendEmail(env, {
       ...common, to_email: to, reply_to: email, recipient_name: 'Bhoomika Dental Clinic team',
-      email_subject: `Payment received — ${appt}`,
-      message_body: `PAYMENT RECEIVED (Stripe)\nAppointment number: ${appt}\nPatient: ${name}\nEmail: ${email}\nAmount: ₹100 INR\nPaid on (IST): ${paidAt}`
+      email_subject: `Online payment received — ${appt}`,
+      message_body: `ONLINE PAYMENT RECEIVED (Stripe, verified)\nAppointment number: ${appt}\nPatient: ${name}\nEmail: ${email}\nAmount: ₹100 INR\nPaid on (IST): ${paidAt}` + (isDoctor ? `\n\nConfirm the appointment (patient then gets full details):\n${confirmLink}` : '')
     }).catch(() => false);
     if (ok) results.clinic += 1;
+    await delay(1100);
   }
-  // Return 5xx if nothing was accepted so Stripe retries the webhook.
   if (!results.patient && results.clinic === 0) return Response.json({ received: true, email: 'failed' }, { status: 502 });
   return Response.json({ received: true, email_accepted: results });
 }
