@@ -1,89 +1,87 @@
+// Stripe webhook: on a verified, paid ₹100 checkout, email "payment successful" to the patient and clinic via EmailJS.
+// Secrets (Cloudflare Pages): STRIPE_WEBHOOK_SECRET, EMAILJS_PUBLIC_KEY, CLINIC_EMAIL, CLINIC_ASSISTANT_EMAIL; optional EMAILJS_PRIVATE_KEY
+import { sheet, reviewLink, recipients, delay } from '../_lib/workflow.js';
 const SITE_ORIGIN = 'https://bhoomika-dental-clinic.pages.dev';
-const headers = { 'access-control-allow-origin': SITE_ORIGIN, 'cache-control': 'no-store' };
-const json = (body, status = 200) => Response.json(body, { status, headers });
-const clean = (value, max = 1000) => String(value ?? '').replace(/[\u0000-\u001f\u007f]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, max);
-const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+const EXPECTED_AMOUNT_PAISE = 10000;
+const TOLERANCE_SECONDS = 300;
+const clean = (v, max = 300) => String(v ?? '').replace(/[<>\u0000-\u001f\u007f]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, max);
+const hex = (buf) => [...new Uint8Array(buf)].map((b) => b.toString(16).padStart(2, '0')).join('');
 
-function hex(buffer) { return [...new Uint8Array(buffer)].map((b) => b.toString(16).padStart(2, '0')).join(''); }
-function constantTimeEqual(a, b) { if (!a || a.length !== b.length) return false; let mismatch = 0; for (let i = 0; i < a.length; i += 1) mismatch |= a.charCodeAt(i) ^ b.charCodeAt(i); return mismatch === 0; }
-async function verifyStripeSignature(raw, signature, secret) {
-  const parts = String(signature || '').split(',').map((item) => item.split('='));
-  const timestamp = parts.find(([key]) => key === 't')?.[1];
-  const signatures = parts.filter(([key]) => key === 'v1').map(([, value]) => value);
-  if (!timestamp || !signatures.length || Math.abs(Date.now() / 1000 - Number(timestamp)) > 300) return false;
+export async function verifyStripeSignature(rawBody, header, secret, now = Date.now()) {
+  if (!header || !secret) return false;
+  const parts = Object.fromEntries(header.split(',').map((p) => p.split('=').map((s) => s.trim())).filter((p) => p.length === 2));
+  const t = Number(parts.t);
+  const signatures = header.split(',').filter((p) => p.trim().startsWith('v1=')).map((p) => p.trim().slice(3));
+  if (!t || !signatures.length || Math.abs(now / 1000 - t) > TOLERANCE_SECONDS) return false;
   const key = await crypto.subtle.importKey('raw', new TextEncoder().encode(secret), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
-  const digest = hex(await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(`${timestamp}.${raw}`)));
-  return signatures.some((candidate) => constantTimeEqual(digest, candidate));
+  const expected = hex(await crypto.subtle.sign('HMAC', key, new TextEncoder().encode(`${t}.${rawBody}`)));
+  return signatures.some((s) => s.length === expected.length && [...s].reduce((d, c, i) => d | (c.charCodeAt(0) ^ expected.charCodeAt(i)), 0) === 0);
 }
-function appointmentNumber(session) {
-  const date = new Date((session.created || Math.floor(Date.now() / 1000)) * 1000);
-  const datePart = date.toISOString().slice(0, 10).replace(/-/g, '');
-  const suffix = clean(session.id, 12).replace(/[^A-Za-z0-9]/g, '').slice(-6).toUpperCase();
-  return `BHC-${datePart}-${suffix || 'PAID'}`;
-}
-function clinicRecipients(env) {
-  return [...new Set([
-    clean(env.CLINIC_EMAIL, 160).toLowerCase(),
-    clean(env.CLINIC_ASSISTANT_EMAIL, 160).toLowerCase()
-  ].filter(Boolean))];
-}
-async function sendEmail(env, params) {
-  if (!env.EMAILJS_SERVICE_ID || !env.EMAILJS_TEMPLATE_ID || !env.EMAILJS_PUBLIC_KEY) return false;
-  const body = { service_id: env.EMAILJS_SERVICE_ID, template_id: env.EMAILJS_TEMPLATE_ID, user_id: env.EMAILJS_PUBLIC_KEY, template_params: params };
+
+async function sendEmail(env, templateParams) {
+  if (!env.EMAILJS_PUBLIC_KEY) return false;
+  const body = { service_id: 'service_oz00kf3', template_id: 'template_lb2zn9m', user_id: env.EMAILJS_PUBLIC_KEY, template_params: templateParams };
   if (env.EMAILJS_PRIVATE_KEY) body.accessToken = env.EMAILJS_PRIVATE_KEY;
-  const response = await fetch('https://api.emailjs.com/api/v1.0/email/send', {
-    method: 'POST', headers: { 'content-type': 'application/json', origin: SITE_ORIGIN, referer: `${SITE_ORIGIN}/` },
+  const res = await fetch('https://api.emailjs.com/api/v1.0/email/send', {
+    method: 'POST',
+    headers: { 'content-type': 'application/json', origin: SITE_ORIGIN, referer: `${SITE_ORIGIN}/` },
     body: JSON.stringify(body)
   });
-  return response.ok;
-}
-async function logPayment(payload, env) {
-  const webhookUrl = env.SHEETS_WEBAPP_URL || env.GOOGLE_SHEETS_WEBHOOK_URL;
-  const token = env.SHEETS_TOKEN || env.WORKFLOW_SECRET || env.GOOGLE_SHEETS_SHARED_SECRET;
-  if (!webhookUrl || !token) return false;
-  const body = new URLSearchParams({ token, payload: JSON.stringify(payload) });
-  const response = await fetch(webhookUrl, { method: 'POST', headers: { 'content-type': 'application/x-www-form-urlencoded;charset=UTF-8' }, body });
-  const result = await response.json().catch(() => null);
-  return response.ok && Boolean(result?.ok);
+  return res.ok;
 }
 
 export async function onRequestPost({ request, env }) {
-  if (!env.STRIPE_WEBHOOK_SECRET) return json({ error: 'Stripe webhook is not configured.' }, 503);
   const raw = await request.text();
-  if (!await verifyStripeSignature(raw, request.headers.get('stripe-signature'), env.STRIPE_WEBHOOK_SECRET)) return json({ error: 'Invalid Stripe signature.' }, 400);
+  if (!(await verifyStripeSignature(raw, request.headers.get('stripe-signature'), env.STRIPE_WEBHOOK_SECRET))) {
+    return new Response('Invalid signature', { status: 400 });
+  }
   let event;
-  try { event = JSON.parse(raw); } catch { return json({ error: 'Invalid Stripe event.' }, 400); }
-  if (event.type !== 'checkout.session.completed') return json({ received: true, ignored: true });
-  const session = event.data?.object;
-  if (!session || session.payment_status !== 'paid') return json({ received: true, ignored: true, reason: 'not_paid' });
+  try { event = JSON.parse(raw); } catch { return new Response('Bad payload', { status: 400 }); }
+  if (event.type !== 'checkout.session.completed') return Response.json({ received: true, ignored: event.type });
 
-  const metadata = session.metadata || {};
-  const number = appointmentNumber(session);
-  const recipients = clinicRecipients(env);
-  const patientEmail = clean(session.customer_details?.email || metadata.patient_email, 160).toLowerCase();
-  if (!recipients.length || !patientEmail) return json({ error: 'Clinic or patient email is missing.' }, 502);
-  const paymentQrUrl = clean(env.CLINIC_PAYMENT_QR_URL, 500);
-  const details = [
-    `Appointment no.: ${number}`,
-    `Payment: ₹${((session.amount_total || 10000) / 100).toFixed(2)} INR — succeeded`,
-    `Patient: ${clean(metadata.patient_name, 100)}`,
-    `Phone: ${clean(metadata.patient_phone, 32)}`,
-    `Email: ${patientEmail}`,
-    `Care area: ${clean(metadata.specialty, 120)}`,
-    `Preferred date/time: ${clean(metadata.preferred_date, 24) || 'Flexible'} ${clean(metadata.preferred_time, 24)}`.trim(),
-    `Clinic: TMC Complex, Badami`,
-    `Clinic phone: +91 9481731482`,
-    `Stripe session: ${clean(session.id, 100)}`
-  ].join('\n');
-  const qrText = paymentQrUrl ? `\nClinic PhonePe/UPI QR: ${paymentQrUrl}` : '\nClinic payment QR: not configured yet.';
-  const common = { appointment_number: number, payment_status: 'succeeded', amount_inr: '100', payment_qr_url: paymentQrUrl, clinic_phone: '+91 9481731482' };
-  let clinicSent = false; let clinicRecipientsSent = 0; let patientSent = false;
-  for (const clinicEmail of recipients) {
-    try { if (await sendEmail(env, { ...common, to_email: clinicEmail, email_subject: `Payment succeeded — ${number}`, reply_to: patientEmail, recipient_name: 'Bhoomika Dental Clinic team', message_body: `PAID APPOINTMENT\n${details}${qrText}`, patient_first_aid: '' })) clinicRecipientsSent += 1; } catch (_) {}
+  const s = event.data?.object || {};
+  if (s.payment_status !== 'paid' || s.currency !== 'inr' || s.amount_total !== EXPECTED_AMOUNT_PAISE) {
+    return Response.json({ received: true, ignored: 'not a paid ₹100 INR session' });
+  }
+  const appt = clean(s.metadata?.appointment_number || s.client_reference_id, 40);
+  const name = clean(s.metadata?.patient_name, 100) || 'Patient';
+  const email = clean(s.customer_details?.email || s.customer_email, 160);
+  const paidAt = new Date((event.created || Date.now() / 1000) * 1000).toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' });
+  const common = {
+    appointment_number: appt, appointment_fee_inr: '100', payment_status: 'PAID — payment succeeded',
+    payment_qr_url: '', calendar_link: '', patient_first_aid: ''
+  };
+  const { doctor, assistant } = recipients(env);
+  const results = { patient: false, clinic: 0 };
+
+  // Record the online payment; only an approved booking can move to paid_online.
+  const saved = await sheet(env, 'transition', { appointment_no: appt, to: 'paid_online', payment_ref: 'stripe:' + clean(s.payment_intent || s.id, 80), payment_claimed_at: new Date().toISOString() });
+  if (!saved.ok && saved.error !== 'bad_state') return Response.json({ received: true, sheet: saved.error }, { status: 502 }); // Stripe will retry
+  if (saved.unchanged) return Response.json({ received: true, duplicate: true });
+
+  if (email) {
+    results.patient = await sendEmail(env, {
+      ...common, to_email: email, reply_to: doctor, recipient_name: name,
+      email_subject: `Payment successful — ${appt}`,
+      message_body: [
+        `Hello ${name}, your payment of ₹100 INR was successful.`,
+        `Appointment number: ${appt}`, `Paid on (IST): ${paidAt}`,
+        'Clinic: Bhoomika Dental Clinic, TMC Complex, Badami, Karnataka, India', 'Clinic phone: +91 9481731482',
+        'The doctor will now confirm your appointment and you will get the final details by email.'
+      ].join('\n')
+    }).catch(() => false);
+  }
+  const confirmLink = await reviewLink(env, appt, 'confirm');
+  for (const [to, isDoctor] of [[doctor, true], [assistant, false]]) {
+    if (!to) continue;
+    const ok = await sendEmail(env, {
+      ...common, to_email: to, reply_to: email, recipient_name: 'Bhoomika Dental Clinic team',
+      email_subject: `Online payment received — ${appt}`,
+      message_body: `ONLINE PAYMENT RECEIVED (Stripe, verified)\nAppointment number: ${appt}\nPatient: ${name}\nEmail: ${email}\nAmount: ₹100 INR\nPaid on (IST): ${paidAt}` + (isDoctor ? `\n\nConfirm the appointment (patient then gets full details):\n${confirmLink}` : '')
+    }).catch(() => false);
+    if (ok) results.clinic += 1;
     await delay(1100);
   }
-  clinicSent = clinicRecipientsSent > 0;
-  try { patientSent = await sendEmail(env, { ...common, to_email: patientEmail, email_subject: `Appointment confirmed — ${number}`, reply_to: recipients[0], recipient_name: clean(metadata.patient_name, 100), message_body: `Your ₹100 INR appointment payment succeeded.\n\nAppointment no.: ${number}\n${details}${qrText}\n\nThe clinic will contact you if the requested time needs adjustment. This email confirms payment and request receipt; the clinic may still need to confirm availability.`, patient_first_aid: '' }); } catch (_) {}
-  const logged = await logPayment({ ...metadata, request_id: `stripe:${session.id}`, patient_email: patientEmail, appointment_number: number, payment_status: 'succeeded', payment_amount_inr: 100, stripe_session_id: session.id, dental_concern: `${metadata.dental_concern || ''} Payment succeeded; appointment ${number}.` }, env);
-  return json({ ok: true, appointment_number: number, clinic_email_sent: clinicSent, clinic_recipients_sent: clinicRecipientsSent, patient_email_sent: patientSent, sheets_logged: logged });
+  if (!results.patient && results.clinic === 0) return Response.json({ received: true, email: 'failed' }, { status: 502 });
+  return Response.json({ received: true, email_accepted: results });
 }

@@ -1,5 +1,14 @@
+import { sheet, sendEmail, recipients, reviewLink, delay as wfDelay, FEE, CLINIC_PHONE } from '../_lib/workflow.js';
 const SITE_ORIGIN = 'https://bhoomika-dental-clinic.pages.dev';
+const CLINIC_ADDRESS = 'TMC Complex, Badami, Karnataka, India';
+const DEFAULT_QR_URL = `${SITE_ORIGIN}/images/payment/phonepe-appointment-qr.jpeg`;
+const APPOINTMENT_FEE_INR = '100';
 const MAX_BODY_BYTES = 12000;
+const RATE_LIMIT_WINDOW_MS = 10 * 60 * 1000;
+const RATE_LIMIT_MAX = 5;
+const REQUEST_CACHE_TTL_MS = 60 * 60 * 1000;
+const recentRequests = new Map();
+const recentByIp = new Map();
 const corsHeaders = {
   'access-control-allow-origin': SITE_ORIGIN,
   'access-control-allow-methods': 'POST, OPTIONS',
@@ -8,8 +17,40 @@ const corsHeaders = {
 };
 
 const json = (body, status = 200) => Response.json(body, { status, headers: corsHeaders });
-const clean = (value, max = 1000) => String(value ?? '').replace(/[\u0000-\u001f\u007f]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, max);
+const clean = (value, max = 1000) => String(value ?? '').replace(/[<>]/g, ' ').replace(/[\u0000-\u001f\u007f]/g, ' ').replace(/\s+/g, ' ').trim().slice(0, max);
 const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+function pruneRecentState(now) {
+  if (recentRequests.size > 1000) {
+    for (const [key, entry] of recentRequests) if (now - entry.created_at > REQUEST_CACHE_TTL_MS) recentRequests.delete(key);
+  }
+  if (recentByIp.size > 5000) {
+    for (const [ip, timestamps] of recentByIp) {
+      const recent = timestamps.filter((timestamp) => now - timestamp < RATE_LIMIT_WINDOW_MS);
+      if (recent.length) recentByIp.set(ip, recent);
+      else recentByIp.delete(ip);
+    }
+  }
+}
+
+function rateLimitRetryAfter(ip, now = Date.now()) {
+  if (!ip) return 0;
+  const recent = (recentByIp.get(ip) || []).filter((timestamp) => now - timestamp < RATE_LIMIT_WINDOW_MS);
+  if (recent.length >= RATE_LIMIT_MAX) return Math.max(1, Math.ceil((recent[0] + RATE_LIMIT_WINDOW_MS - now) / 1000));
+  recent.push(now);
+  recentByIp.set(ip, recent);
+  return 0;
+}
+
+function createAppointmentNumber(now = new Date()) {
+  const parts = new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Asia/Kolkata', year: 'numeric', month: '2-digit', day: '2-digit'
+  }).formatToParts(now);
+  const part = (type) => parts.find((item) => item.type === type)?.value || '';
+  const datePart = `${part('year')}${part('month')}${part('day')}`;
+  const suffix = crypto.randomUUID().replace(/-/g, '').slice(0, 8).toUpperCase();
+  return `BHC-${datePart}-${suffix}`;
+}
 
 function safePayload(input) {
   const fields = {
@@ -21,12 +62,10 @@ function safePayload(input) {
     preferred_date: 24,
     preferred_time: 24,
     dental_concern: 700,
-    language: 8,
-    source: 64
+    language: 8
   };
   const payload = Object.fromEntries(Object.entries(fields).map(([key, max]) => [key, clean(input?.[key], max)]));
   payload.consent = input?.consent === true || ['true', 'yes', 'on'].includes(String(input?.consent || '').toLowerCase());
-  payload.sms_opt_in = input?.sms_opt_in === true || ['true', 'yes', 'on'].includes(String(input?.sms_opt_in || '').toLowerCase());
   payload.request_id = clean(input?.request_id, 80) || crypto.randomUUID();
   payload.submitted_at = clean(input?.submitted_at, 40) || new Date().toISOString();
   return payload;
@@ -36,7 +75,6 @@ function validate(payload) {
   const digits = payload.patient_phone.replace(/\D/g, '');
   const validEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(payload.patient_email);
   return payload.patient_name.length >= 2
-    && payload.patient_phone.length >= 7
     && digits.length >= 7
     && digits.length <= 15
     && validEmail
@@ -45,154 +83,81 @@ function validate(payload) {
     && payload.consent;
 }
 
-async function sendEmail(env, templateParams) {
-  const serviceId = env.EMAILJS_SERVICE_ID;
-  const templateId = env.EMAILJS_TEMPLATE_ID;
-  const publicKey = env.EMAILJS_PUBLIC_KEY;
-  if (!serviceId || !templateId || !publicKey) return false;
-  const body = { service_id: serviceId, template_id: templateId, user_id: publicKey, template_params: templateParams };
-  if (env.EMAILJS_PRIVATE_KEY) body.accessToken = env.EMAILJS_PRIVATE_KEY;
-  const response = await fetch('https://api.emailjs.com/api/v1.0/email/send', {
-    method: 'POST',
-    headers: { 'content-type': 'application/json', origin: SITE_ORIGIN, referer: `${SITE_ORIGIN}/` },
-    body: JSON.stringify(body)
+function calendarTimestamp(date, time) {
+  const dateMatch = /^(\d{4})-(\d{2})-(\d{2})$/.exec(date);
+  const timeMatch = /^(\d{2}):(\d{2})$/.exec(time);
+  if (!dateMatch || !timeMatch) return '';
+  const [, yearText, monthText, dayText] = dateMatch;
+  const [, hourText, minuteText] = timeMatch;
+  const year = Number(yearText);
+  const month = Number(monthText);
+  const day = Number(dayText);
+  const hour = Number(hourText);
+  const minute = Number(minuteText);
+  const check = new Date(Date.UTC(year, month - 1, day));
+  if (check.getUTCFullYear() !== year || check.getUTCMonth() !== month - 1 || check.getUTCDate() !== day || hour > 23 || minute > 59) return '';
+  const utc = Date.UTC(year, month - 1, day, hour, minute) - (330 * 60 * 1000);
+  return new Date(utc).toISOString().replace(/[-:]/g, '').replace(/\.\d{3}Z$/, 'Z');
+}
+
+function buildCalendarLink(payload, appointmentNumber) {
+  const start = calendarTimestamp(payload.preferred_date, payload.preferred_time);
+  if (!start) return '';
+  const startDate = new Date(`${start.slice(0, 4)}-${start.slice(4, 6)}-${start.slice(6, 8)}T${start.slice(9, 11)}:${start.slice(11, 13)}:${start.slice(13, 15)}Z`);
+  const end = new Date(startDate.getTime() + 30 * 60 * 1000).toISOString().replace(/[-:]/g, '').replace(/\.\d{3}Z$/, 'Z');
+  const details = `Tentative placeholder for requested time only; this is not a confirmed appointment. Request number: ${appointmentNumber}. The clinic will confirm availability and manually verify PhonePe payment. Clinic phone: +91 9481731482.`;
+  const params = new URLSearchParams({
+    action: 'TEMPLATE',
+    text: 'Bhoomika Dental Clinic — requested visit (not confirmed)',
+    dates: `${start}/${end}`,
+    ctz: 'Asia/Kolkata',
+    location: CLINIC_ADDRESS,
+    details
   });
-  return response.ok;
+  return `https://calendar.google.com/calendar/render?${params.toString()}`;
 }
 
-function clinicRecipients(env) {
-  return [...new Set([
-    clean(env.CLINIC_EMAIL, 160).toLowerCase(),
-    clean(env.CLINIC_ASSISTANT_EMAIL, 160).toLowerCase()
-  ].filter(Boolean))];
-}
-
-async function sendEmailNotifications(payload, env) {
-  const recipients = clinicRecipients(env);
-  const paymentQrUrl = clean(env.CLINIC_PAYMENT_QR_URL, 500);
-  if (!env.EMAILJS_SERVICE_ID || !env.EMAILJS_TEMPLATE_ID || !env.EMAILJS_PUBLIC_KEY || !recipients.length) {
-    return { configured: false, clinic_sent: false, patient_sent: false };
-  }
-
-  const careType = payload.workflow_type === 'preventive_screening' ? 'Preventive screening' : 'Appointment request';
-  const clinicSummary = [
-    'NEW APPOINTMENT REQUEST',
-    `Request ID: ${payload.request_id}`,
-    `Patient: ${payload.patient_name}`,
-    `Phone: ${payload.patient_phone}`,
-    `Email: ${payload.patient_email}`,
-    `Request type: ${careType}`,
-    `Care area: ${payload.specialty}`,
-    `Preferred date/time: ${payload.preferred_date || 'Flexible'} ${payload.preferred_time || ''}`.trim(),
-    `Concern: ${payload.dental_concern || 'Not specified'}`,
-    `Language: ${payload.language || 'en'}`,
-    'Appointment fee: ₹100 INR — pending payment',
-    `PhonePe QR: ${paymentQrUrl || 'Clinic QR not configured'}`
+async function notify(payload, appointmentNumber, env) {
+  const { doctor, assistant } = recipients(env);
+  const preferred = [payload.preferred_date, payload.preferred_time].filter(Boolean).join(' ') || 'Flexible';
+  const calendarLink = buildCalendarLink(payload, appointmentNumber);
+  const approve = await reviewLink(env, appointmentNumber, 'approve');
+  const decline = await reviewLink(env, appointmentNumber, 'decline');
+  const details = [
+    `Request number: ${appointmentNumber}`, `Patient: ${payload.patient_name}`, `Phone: ${payload.patient_phone}`,
+    `Email: ${payload.patient_email}`, `Care area: ${payload.specialty}`, `Preferred (IST, requested only): ${preferred}`
   ].join('\n');
-  const firstAid = payload.language === 'kn'
-    ? 'ಮುಖದ ತೀವ್ರ ಊತ, ನಿಯಂತ್ರಿಸಲಾಗದ ರಕ್ತಸ್ರಾವ, ಹಲ್ಲಿನ ಗಾಯ, ಅಥವಾ ಉಸಿರಾಟ/ನುಂಗುವ ತೊಂದರೆ ಇದ್ದರೆ ತಕ್ಷಣ ಸ್ಥಳೀಯ ತುರ್ತು ವೈದ್ಯಕೀಯ ನೆರವು ಪಡೆಯಿರಿ. ಇಮೇಲ್ ಉತ್ತರಕ್ಕಾಗಿ ಕಾಯಬೇಡಿ. ಇದು ರೋಗನಿರ್ಣಯ ಅಥವಾ ತುರ್ತು ಸೇವೆಯಲ್ಲ.'
-    : 'If you have severe facial swelling, uncontrolled bleeding, a dental injury, or difficulty breathing or swallowing, seek urgent local medical care now. Do not wait for an email reply. This message is not a diagnosis or emergency service.';
+  const accepted = { doctor: false, assistant: false, patient: false };
 
-  let clinicSent = false;
-  let clinicRecipientsSent = 0;
-  let patientSent = false;
-  for (const clinicEmail of recipients) {
-    try {
-      const sent = await sendEmail(env, {
-        to_email: clinicEmail,
-        reply_to: payload.patient_email,
-        email_subject: `${careType} — ${payload.patient_name}`,
-        recipient_name: 'Bhoomika Dental Clinic team',
-        appointment_fee_inr: '100',
-        payment_status: 'pending',
-        payment_qr_url: paymentQrUrl,
-        message_body: clinicSummary,
-        patient_first_aid: ''
-      });
-      if (sent) clinicRecipientsSent += 1;
-    } catch { /* Email is reported as incomplete without exposing provider details. */ }
-    await delay(1100);
-  }
-  clinicSent = clinicRecipientsSent > 0;
-  try {
-    const patientClinicEmail = recipients[0];
-    patientSent = await sendEmail(env, {
-      to_email: payload.patient_email,
-      reply_to: patientClinicEmail,
-      email_subject: 'We received your Bhoomika Dental Clinic request',
-      recipient_name: payload.patient_name,
-      appointment_fee_inr: '100',
-      payment_status: 'pending',
-      payment_qr_url: paymentQrUrl,
-      message_body: `Thank you, ${payload.patient_name}. The clinic has received your ${careType.toLowerCase()} request.\n\nAppointment fee: ₹100 INR — payment pending. Scan the PhonePe QR code shown below in this email, then keep the payment receipt. The clinic will verify payment and contact you to confirm availability. This is a request, not a confirmed appointment.\n\nPhonePe QR: ${paymentQrUrl || 'The clinic will provide the QR separately.'}\n\n${firstAid}\n\nClinic: +91 9481731482`,
-      patient_first_aid: firstAid
-    });
-  } catch { /* Keep the clinic's appointment intake available if email delivery fails. */ }
-  return { configured: true, clinic_sent: clinicSent, clinic_recipients_sent: clinicRecipientsSent, patient_sent: patientSent };
-}
-
-function normalizeMsg91Mobile(value) {
-  const digits = String(value || '').replace(/\D/g, '');
-  if (digits.length === 10) return `91${digits}`;
-  if (digits.length === 11 && digits.startsWith('0')) return `91${digits.slice(1)}`;
-  if (digits.length === 12 && digits.startsWith('91')) return digits;
-  if (String(value || '').trim().startsWith('+') && digits.length >= 8 && digits.length <= 15) return digits;
-  return '';
-}
-
-async function sendAppointmentSms(payload, env) {
-  if (!payload.sms_opt_in) return { configured: false, sent: false, status: 'not_opted_in' };
-  if (!env.MSG91_AUTH_KEY || !env.MSG91_TEMPLATE_ID) return { configured: false, sent: false, status: 'not_configured' };
-  const mobile = normalizeMsg91Mobile(payload.patient_phone);
-  if (!mobile) return { configured: true, sent: false, status: 'invalid_number' };
-
-  const flowPayload = {
-    template_id: env.MSG91_TEMPLATE_ID,
-    short_url: '0',
-    realTimeResponse: '1',
-    recipients: [{ mobiles: mobile }]
-  };
-
-  try {
-    const response = await fetch('https://control.msg91.com/api/v5/flow', {
-      method: 'POST',
-      headers: { accept: 'application/json', authkey: env.MSG91_AUTH_KEY, 'content-type': 'application/json' },
-      body: JSON.stringify(flowPayload)
-    });
-    const result = await response.json().catch(() => null);
-    const sent = response.ok && String(result?.type || '').toLowerCase() === 'success';
-    return { configured: true, sent, status: sent ? 'sent' : 'failed' };
-  } catch {
-    return { configured: true, sent: false, status: 'failed' };
-  }
-}
-
-async function logToSheets(payload, env) {
-  const webhookUrl = env.SHEETS_WEBAPP_URL || env.GOOGLE_SHEETS_WEBHOOK_URL;
-  const token = env.SHEETS_TOKEN || env.WORKFLOW_SECRET || env.GOOGLE_SHEETS_SHARED_SECRET;
-  if (!webhookUrl || !token) {
-    return { configured: false };
-  }
-  const body = new URLSearchParams({
-    token,
-    payload: JSON.stringify(payload)
+  accepted.doctor = await sendEmail(env, {
+    to_email: doctor, reply_to: payload.patient_email, email_subject: `Verify appointment request — ${appointmentNumber}`,
+    appointment_number: appointmentNumber, payment_status: 'awaiting doctor verification',
+    message_body: `NEW APPOINTMENT REQUEST — NEEDS YOUR VERIFICATION\n${details}\n\nApprove (patient is then asked to pay ₹${FEE_TEXT}):\n${approve}\n\nDecline:\n${decline}`
   });
-  const response = await fetch(webhookUrl, {
-    method: 'POST',
-    headers: { 'content-type': 'application/x-www-form-urlencoded;charset=UTF-8' },
-    body
+  await delay(1100);
+  accepted.assistant = await sendEmail(env, {
+    to_email: assistant, reply_to: payload.patient_email, email_subject: `New request (awaiting doctor) — ${appointmentNumber}`,
+    appointment_number: appointmentNumber, payment_status: 'awaiting doctor verification',
+    message_body: `FYI — new appointment request, forwarded to the doctor for verification.\n${details}`
   });
-  if (!response.ok) throw new Error('Sheets webhook failed');
-  const result = await response.json().catch(() => null);
-  if (!result?.ok) throw new Error('Sheets webhook rejected request');
-  return { configured: true, duplicate: Boolean(result.duplicate) };
+  await delay(1100);
+  accepted.patient = await sendEmail(env, {
+    to_email: payload.patient_email, reply_to: doctor, email_subject: `Request received — ${appointmentNumber}`,
+    recipient_name: payload.patient_name, appointment_number: appointmentNumber, payment_status: 'awaiting doctor verification',
+    calendar_link: calendarLink,
+    message_body: `Thank you, ${payload.patient_name}. Your appointment request ${appointmentNumber} has been received by Bhoomika Dental Clinic.\nRequested (IST): ${preferred}\n\nThe doctor will verify your request first. You will get another email once you are registered, with the ₹${FEE_TEXT} payment QR. Please do not pay before then.\nThis is not a confirmed appointment. Clinic phone: ${CLINIC_PHONE}`
+  });
+  return accepted;
 }
-
+const FEE_TEXT = FEE;
 export async function onRequestOptions() {
   return new Response(null, { status: 204, headers: corsHeaders });
 }
 
 export async function onRequestPost({ request, env }) {
+  const origin = request.headers.get('origin');
+  if (origin && origin !== SITE_ORIGIN) return json({ error: 'Request origin not allowed.' }, 403);
+
   const raw = await request.text();
   if (new TextEncoder().encode(raw).byteLength > MAX_BODY_BYTES) return json({ error: 'Request is too large.' }, 413);
 
@@ -203,26 +168,50 @@ export async function onRequestPost({ request, env }) {
   const payload = safePayload(input);
   if (!validate(payload)) return json({ error: 'Please provide a valid name, phone, email, care area, and consent.' }, 400);
 
-  const outcomes = await Promise.allSettled([
-    sendEmailNotifications(payload, env),
-    logToSheets(payload, env)
-  ]);
-  const email = outcomes[0].status === 'fulfilled' ? outcomes[0].value : { configured: false, clinic_sent: false, patient_sent: false };
-  const sheets = outcomes[1].status === 'fulfilled' ? outcomes[1].value : { configured: false };
-  const configured = [email.clinic_sent, sheets.configured].filter(Boolean).length;
+  const now = Date.now();
+  pruneRecentState(now);
+  const clientIp = clean(request.headers.get('cf-connecting-ip'), 64);
+  const requestKey = `${clientIp || 'no-ip'}:${payload.request_id}`;
+  const cached = recentRequests.get(requestKey);
+  if (cached && now - cached.created_at < REQUEST_CACHE_TTL_MS) {
+    if (cached.status === 'pending') return json({ error: 'This request is already being processed.' }, 409);
+    return json(cached.body, cached.status);
+  }
+  const retryAfter = rateLimitRetryAfter(clientIp, now);
+  if (retryAfter) {
+    return new Response(JSON.stringify({ error: 'Too many requests from this connection. Please wait before trying again.' }), {
+      status: 429,
+      headers: { ...corsHeaders, 'content-type': 'application/json', 'retry-after': String(retryAfter) }
+    });
+  }
+  recentRequests.set(requestKey, { created_at: now, status: 'pending' });
 
-  if (configured === 0) return json({ error: 'Appointment routing is not configured.' }, 503);
-  const sms = await sendAppointmentSms(payload, env);
-  return json({
-    ok: true,
-    request_id: payload.request_id,
-    email_configured: Boolean(email.clinic_sent && email.patient_sent),
-    email_status: email.configured ? (email.clinic_sent && email.patient_sent ? 'sent' : 'partial') : 'not_configured',
-    clinic_recipients_sent: Number(email.clinic_recipients_sent || 0),
-    patient_email_sent: Boolean(email.patient_sent),
-    sheets_logged: Boolean(sheets.configured),
-    sms_status: sms.status,
-    sms_sent: Boolean(sms.sent),
-    message: 'Appointment request received.'
+  const appointmentNumber = createAppointmentNumber();
+  const saved = await sheet(env, 'create', {
+    appointment_no: appointmentNumber, patient_name: payload.patient_name, patient_email: payload.patient_email, phone: payload.patient_phone,
+    care_area: payload.specialty, preferred_date: payload.preferred_date, preferred_time: payload.preferred_time,
+    note: payload.dental_concern, language: payload.language, source: clean(input?.source, 64) || 'website-form'
   });
+  const { doctor, assistant } = recipients(env);
+  if (!saved.ok || !env.EMAILJS_PUBLIC_KEY || !env.WORKFLOW_SECRET || !doctor || !assistant || doctor === assistant) {
+    recentRequests.delete(requestKey);
+    return json({ ok: false, appointment_number: appointmentNumber, error: 'Booking service is not fully set up yet. Please call the clinic on +91 9481731482.' }, 503);
+  }
+  const accepted = await notify(payload, appointmentNumber, env);
+  if (!accepted.doctor) {
+    recentRequests.delete(requestKey);
+    return json({ ok: false, appointment_number: appointmentNumber, error: 'We could not reach the doctor by email. Please call +91 9481731482.' }, 502);
+  }
+  const resultBody = {
+    ok: true,
+    appointment_number: appointmentNumber,
+    stage: 'awaiting_doctor_verification',
+    doctor_email_accepted: accepted.doctor,
+    assistant_email_accepted: accepted.assistant,
+    patient_email_accepted: accepted.patient,
+    delivery_verified: false,
+    message: `Request ${appointmentNumber} received. The doctor will verify it; you will then get an email asking for the ₹100 payment. This is not a confirmed appointment.`
+  };
+  recentRequests.set(requestKey, { created_at: now, status: 200, body: resultBody });
+  return json(resultBody);
 }
