@@ -195,12 +195,13 @@ export async function onRequestPost({ request, env }) {
   const { doctor, assistant } = recipients(env);
   if (!saved.ok || !env.EMAILJS_PUBLIC_KEY || !env.WORKFLOW_SECRET || !doctor || !assistant || doctor === assistant) {
     recentRequests.delete(requestKey);
-    return json({ ok: false, appointment_number: appointmentNumber, error: 'Booking service is not fully set up yet. Please call the clinic on +91 9481731482.' }, 503);
+    const reason = !saved.ok ? `sheet:${saved.error || 'unknown'}` : !env.EMAILJS_PUBLIC_KEY ? 'config:emailjs_key' : !env.WORKFLOW_SECRET ? 'config:workflow_secret' : 'config:clinic_emails';
+    return json({ ok: false, appointment_number: appointmentNumber, reason, error: `Booking service is not fully set up yet (code ${reason}). Please call the clinic on +91 9481731482.` }, 503);
   }
   const accepted = await notify(payload, appointmentNumber, env);
   if (!accepted.doctor) {
     recentRequests.delete(requestKey);
-    return json({ ok: false, appointment_number: appointmentNumber, error: 'We could not reach the doctor by email. Please call +91 9481731482.' }, 502);
+    return json({ ok: false, appointment_number: appointmentNumber, reason: 'email:doctor_not_accepted', error: 'We could not reach the doctor by email (code email:doctor_not_accepted). Please call +91 9481731482.' }, 502);
   }
   const resultBody = {
     ok: true,
