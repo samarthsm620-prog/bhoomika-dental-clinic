@@ -30,8 +30,8 @@ export function recipients(env) {
 }
 
 // One EmailJS template is reused for every message; EmailJS acceptance is not inbox delivery.
-export async function sendEmail(env, p) {
-  if (!env.EMAILJS_PUBLIC_KEY) return false;
+export async function sendEmailDetailed(env, p) {
+  if (!env.EMAILJS_PUBLIC_KEY) return { ok: false, status: 0, detail: 'no_public_key' };
   const body = {
     service_id: 'service_oz00kf3', template_id: 'template_lb2zn9m', user_id: env.EMAILJS_PUBLIC_KEY,
     template_params: {
@@ -44,9 +44,12 @@ export async function sendEmail(env, p) {
     const res = await fetch('https://api.emailjs.com/api/v1.0/email/send', {
       method: 'POST', headers: { 'content-type': 'application/json', origin: SITE_ORIGIN, referer: `${SITE_ORIGIN}/` }, body: JSON.stringify(body)
     });
-    return res.ok;
-  } catch { return false; }
+    // EmailJS error bodies are short plain-text reasons (no secrets); keep a trimmed copy for diagnostics only.
+    const detail = res.ok ? '' : clean(await res.text().catch(() => ''), 120);
+    return { ok: res.ok, status: res.status, detail };
+  } catch { return { ok: false, status: 0, detail: 'network_error' }; }
 }
+export async function sendEmail(env, p) { return (await sendEmailDetailed(env, p)).ok; }
 
 // Google Sheets (via the Apps Script receiver in google-sheets/Code.gs) is the system of record for booking state.
 export async function sheet(env, action, data) {

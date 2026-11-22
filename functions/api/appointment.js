@@ -1,4 +1,4 @@
-import { sheet, sendEmail, recipients, reviewLink, delay as wfDelay, FEE, CLINIC_PHONE } from '../_lib/workflow.js';
+import { sheet, sendEmail, sendEmailDetailed, recipients, reviewLink, delay as wfDelay, FEE, CLINIC_PHONE } from '../_lib/workflow.js';
 const SITE_ORIGIN = 'https://bhoomika-dental-clinic.pages.dev';
 const CLINIC_ADDRESS = 'TMC Complex, Badami, Karnataka, India';
 const DEFAULT_QR_URL = `${SITE_ORIGIN}/images/payment/phonepe-appointment-qr.jpeg`;
@@ -129,11 +129,13 @@ async function notify(payload, appointmentNumber, env) {
   ].join('\n');
   const accepted = { doctor: false, assistant: false, patient: false };
 
-  accepted.doctor = await sendEmail(env, {
+  const doctorResult = await sendEmailDetailed(env, {
     to_email: doctor, reply_to: payload.patient_email, email_subject: `Verify appointment request — ${appointmentNumber}`,
     appointment_number: appointmentNumber, payment_status: 'awaiting doctor verification',
     message_body: `NEW APPOINTMENT REQUEST — NEEDS YOUR VERIFICATION\n${details}\n\nApprove (patient is then asked to pay ₹${FEE_TEXT}):\n${approve}\n\nDecline:\n${decline}`
   });
+  accepted.doctor = doctorResult.ok;
+  accepted.doctorError = doctorResult.ok ? '' : `${doctorResult.status}${doctorResult.detail ? ' ' + doctorResult.detail : ''}`;
   await delay(1100);
   accepted.assistant = await sendEmail(env, {
     to_email: assistant, reply_to: payload.patient_email, email_subject: `New request (awaiting doctor) — ${appointmentNumber}`,
@@ -201,7 +203,7 @@ export async function onRequestPost({ request, env }) {
   const accepted = await notify(payload, appointmentNumber, env);
   if (!accepted.doctor) {
     recentRequests.delete(requestKey);
-    return json({ ok: false, appointment_number: appointmentNumber, reason: 'email:doctor_not_accepted', error: 'We could not reach the doctor by email (code email:doctor_not_accepted). Please call +91 9481731482.' }, 502);
+    return json({ ok: false, appointment_number: appointmentNumber, reason: `email:${accepted.doctorError}`, error: `We could not reach the doctor by email (code email:${accepted.doctorError}). Please call +91 9481731482.` }, 502);
   }
   const resultBody = {
     ok: true,
