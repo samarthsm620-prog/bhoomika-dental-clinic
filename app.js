@@ -253,7 +253,7 @@ function initBooking() {
     } catch (error) {
       const code = /\(code ([^)]+)\)/.exec(error?.message || '')?.[1];
       if (confirmation) confirmation.hidden = false;
-      if (confirmation) confirmation.textContent = 'We could not complete the request just now. Please call +91 9481731482 so the clinic can help you directly.' + (code ? ` (Error code: ${code})` : '');
+      if (confirmation) confirmation.textContent = 'We could not complete the request just now. Please call +91 9481731482 so the clinic can help you directly.' + (code ? ` (Error code: ${code})` : (error?.message ? ` (Details: ${String(error.message).slice(0, 160)})` : ''));
       setStatus(status, 'Your request could not be fully sent just now. Please call +91 9481731482.', 'error');
       if (paymentPanel) paymentPanel.hidden = true;
     } finally {
