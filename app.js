@@ -198,6 +198,8 @@ function initLanguage() {
     $$('[data-l10n-en][data-l10n-kn]').forEach((node) => { node.textContent = node.dataset[currentLanguage === 'kn' ? 'l10nKn' : 'l10nEn']; });
     const allTab = $('#condition-letters .condition-letter');
     if (allTab) allTab.textContent = currentLanguage === 'kn' ? 'ಎಲ್ಲಾ' : 'All';
+    const directoryHint = $('#condition-grid [data-condition-hint]');
+    if (directoryHint) directoryHint.textContent = currentLanguage === 'kn' ? 'ಮೌಖಿಕ ಆರೋಗ್ಯ ವಿಷಯಗಳನ್ನು ನೋಡಲು ಮೇಲಿನ ಅಕ್ಷರವನ್ನು ಆಯ್ಕೆಮಾಡಿ ಅಥವಾ ಹುಡುಕಿ.' : 'Choose a letter above or search to explore oral-health topics.';
   };
   button?.addEventListener('click', () => {
     currentLanguage = currentLanguage === 'en' ? 'kn' : 'en';
@@ -363,19 +365,26 @@ function initConditions() {
   const input = $('#condition-search');
   if (!grid || !letters || !disorders.length) return;
   let activeLetter = '';
+  let hasInteracted = false;
   const renderCards = () => {
     const query = input.value.trim().toLowerCase();
+    if (!hasInteracted && !query) {
+      const hint = currentLanguage === 'kn' ? 'ಮೌಖಿಕ ಆರೋಗ್ಯ ವಿಷಯಗಳನ್ನು ನೋಡಲು ಮೇಲಿನ ಅಕ್ಷರವನ್ನು ಆಯ್ಕೆಮಾಡಿ ಅಥವಾ ಹುಡುಕಿ.' : 'Choose a letter above or search to explore oral-health topics.';
+      grid.innerHTML = `<p class="condition-empty" data-condition-hint>${hint}</p>`;
+      return;
+    }
     const visible = disorders.filter((item) => (!activeLetter || item.letter === activeLetter) && (!query || `${item.name} ${item.summary} ${item.type}`.toLowerCase().includes(query)));
     grid.innerHTML = visible.length ? visible.map((item) => `<article class="condition-card"><div class="condition-card-top"><span class="condition-letter-mark">${item.letter}</span><span class="condition-type">${item.type}</span></div><h3>${item.name}</h3><p>${item.summary}</p><p class="condition-care"><strong>When to ask for care:</strong> ${item.care}</p><a class="condition-source" href="${item.url}" ${item.url.startsWith('http') ? 'target="_blank" rel="noreferrer"' : ''}>Source: ${item.source} ↗</a></article>`).join('') : '<p class="condition-empty">No topic matches that search. Try a symptom, condition or care question.</p>';
   };
   letters.innerHTML = `<button class="condition-letter is-active" type="button" data-letter="" role="tab" aria-selected="true">${currentLanguage === 'kn' ? 'ಎಲ್ಲಾ' : 'All'}</button>${disorders.map((item) => `<button class="condition-letter" type="button" data-letter="${item.letter}" role="tab" aria-selected="false">${item.letter}</button>`).join('')}`;
   $$('.condition-letter', letters).forEach((button) => button.addEventListener('click', () => {
+    hasInteracted = true;
     activeLetter = button.dataset.letter;
     input.value = '';
     $$('.condition-letter', letters).forEach((item) => { const selected = item === button; item.classList.toggle('is-active', selected); item.setAttribute('aria-selected', String(selected)); });
     renderCards();
   }));
-  input.addEventListener('input', () => { activeLetter = ''; $$('.condition-letter', letters).forEach((item, index) => { item.classList.toggle('is-active', index === 0); item.setAttribute('aria-selected', String(index === 0)); }); renderCards(); });
+  input.addEventListener('input', () => { activeLetter = ''; hasInteracted = Boolean(input.value.trim()); $$('.condition-letter', letters).forEach((item, index) => { item.classList.toggle('is-active', index === 0); item.setAttribute('aria-selected', String(index === 0)); }); renderCards(); });
   renderCards();
 }
 function speak(text) {
