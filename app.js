@@ -390,20 +390,25 @@ function speak(text) {
 function localAnswer(prompt) {
   const text = prompt.toLowerCase();
   const specialties = knowledge?.specialties || {};
+  const clinic = knowledge?.clinic || {};
   const match = Object.entries(specialties).find(([term]) => text.includes(term));
-  if (text.includes('hour') || text.includes('time') || text.includes('open')) return currentLanguage === 'kn' ? 'ನಮ್ಮ ಕ್ಲಿನಿಕ್ ಬೆಳಿಗ್ಗೆ 10:30 ರಿಂದ ಮಧ್ಯಾಹ್ನ 2:30 ರವರೆಗೆ ಮತ್ತು ಸಂಜೆ 5 ರಿಂದ 7:30 ರವರೆಗೆ ತೆರೆದಿರುತ್ತದೆ. ಸೋಮವಾರ ಉಚಿತ ಸಮಾಲೋಚನೆ ಬೆಳಿಗ್ಗೆ 10:30 ರಿಂದ ಮಧ್ಯಾಹ್ನ 2 ರವರೆಗೆ.' : 'We are open from 10:30 AM to 2:30 PM and 5:00 PM to 7:30 PM. Monday free consultations run from 10:30 AM to 2:00 PM.';
-  if (text.includes('where') || text.includes('address') || text.includes('location')) return currentLanguage === 'kn' ? 'ನಾವು ಬಾದಾಮಿಯ ಟಿಎಂಸಿ ಕಾಂಪ್ಲೆಕ್ಸ್‌ನಲ್ಲಿ ಇದ್ದೇವೆ.' : 'We are at TMC Complex in Badami.';
+  if (text.includes('urgent') || text.includes('severe') || text.includes('swelling') || text.includes('bleeding') || text.includes('knocked') || text.includes('breathing') || text.includes('swallow')) return currentLanguage === 'kn' ? `ತೀವ್ರ ನೋವು, ಮುಖದ ಊತ, ನಿಯಂತ್ರಿಸಲಾಗದ ರಕ್ತಸ್ರಾವ ಅಥವಾ ಉಸಿರಾಟ/ನುಂಗುವ ತೊಂದರೆ ಇದ್ದರೆ ತಕ್ಷಣ ತುರ್ತು ವೈದ್ಯಕೀಯ ನೆರವು ಪಡೆಯಿರಿ. ಕ್ಲಿನಿಕ್‌ಗೆ ${clinic.phone || '+91 9481731482'} ನಲ್ಲಿ ಕರೆ ಮಾಡಿ.` : `For severe pain, facial swelling, uncontrolled bleeding, breathing or swallowing difficulty, or a knocked-out tooth, seek urgent local care. You can also call the clinic at ${clinic.phone || '+91 9481731482'}.`;
+  if (text.includes('hour') || text.includes('time') || text.includes('open')) return currentLanguage === 'kn' ? `ನಮ್ಮ ಕ್ಲಿನಿಕ್ ${clinic.hours?.[0] || '10:30 AM–2:30 PM'} ಮತ್ತು ${clinic.hours?.[1] || '5:00 PM–7:30 PM'} ತೆರೆದಿರುತ್ತದೆ. ಸೋಮವಾರ ಉಚಿತ ಸಮಾಲೋಚನೆ ${clinic.freeConsultation || '10:30 AM–2:00 PM'}.` : `The clinic is open ${clinic.hours?.[0] || '10:30 AM–2:30 PM'} and ${clinic.hours?.[1] || '5:00 PM–7:30 PM'}. Free consultations are available ${clinic.freeConsultation || 'on Mondays from 10:30 AM to 2:00 PM'}.`;
+  if (text.includes('free') || text.includes('monday') || text.includes('consultation')) return currentLanguage === 'kn' ? `ಸೋಮವಾರ ಉಚಿತ ಸಮಾಲೋಚನೆ ${clinic.freeConsultation || '10:30 AM–2:00 PM'}.` : `Free consultations are available ${clinic.freeConsultation || 'on Mondays from 10:30 AM to 2:00 PM'}.`;
+  if (text.includes('where') || text.includes('address') || text.includes('location')) return currentLanguage === 'kn' ? `ನಾವು ${clinic.location || 'ಬಾದಾಮಿಯ ಟಿಎಂಸಿ ಕಾಂಪ್ಲೆಕ್ಸ್'} ನಲ್ಲಿ ಇದ್ದೇವೆ.` : `The clinic is at ${clinic.location || 'TMC Complex, Badami'}.`;
+  if (text.includes('phone') || text.includes('contact') || text.includes('call') || text.includes('number')) return currentLanguage === 'kn' ? `ಕ್ಲಿನಿಕ್‌ಗೆ ${clinic.phone || '+91 9481731482'} ನಲ್ಲಿ ಕರೆ ಮಾಡಿ.` : `You can call the clinic at ${clinic.phone || '+91 9481731482'}.`;
+  if (text.includes('appointment') || text.includes('book') || text.includes('visit')) return currentLanguage === 'kn' ? 'ವೆಬ್‌ಸೈಟ್‌ನ ಅಪಾಯಿಂಟ್‌ಮೆಂಟ್ ಫಾರ್ಮ್ ಬಳಸಿ ವಿನಂತಿ ಸಲ್ಲಿಸಿ ಅಥವಾ ಕ್ಲಿನಿಕ್‌ಗೆ ಕರೆ ಮಾಡಿ. ಕ್ಲಿನಿಕ್ ದೃಢೀಕರಿಸುವವರೆಗೆ ಅದು ಖಚಿತ ಅಪಾಯಿಂಟ್‌ಮೆಂಟ್ ಅಲ್ಲ.' : 'Use the website appointment form to send a request, or call the clinic. It is not confirmed until the clinic verifies it.';
+  if (text.includes('doctor') || text.includes('dentist') || text.includes('who')) return currentLanguage === 'kn' ? `ನಿಮ್ಮ ವೈದ್ಯರು ${clinic.doctor || 'ಡಾ. ಲತಾ ಎಚ್. ತೇರೆಡಲ್, BDS'}.` : `The clinic is led by ${clinic.doctor || 'Dr. Lata H. Teredal, BDS'}.`;
   if (match) return currentLanguage === 'kn' ? `${match[1]} ಕುರಿತು ನಾವು ಸಹಾಯ ಮಾಡಬಹುದು. ಅಪಾಯಿಂಟ್‌ಮೆಂಟ್ ವಿನಂತಿಸಲು ಬುಕ್ ಅಪಾಯಿಂಟ್‌ಮೆಂಟ್ ಫಾರ್ಮ್ ಬಳಸಿ.` : `We can help with ${match[1]}. Use the appointment form to request a visit.`;
-  if (text.includes('urgent') || text.includes('swelling') || text.includes('bleeding') || text.includes('knocked')) return currentLanguage === 'kn' ? 'ತೀವ್ರ ನೋವು, ಊತ ಅಥವಾ ನಿಯಂತ್ರಿಸಲಾಗದ ರಕ್ತಸ್ರಾವ ಇದ್ದರೆ ತಕ್ಷಣ ಕ್ಲಿನಿಕ್‌ಗೆ ಕರೆ ಮಾಡಿ: +91 9481731482.' : 'For severe pain, swelling, uncontrolled bleeding, or a knocked-out tooth, please call the clinic now at +91 9481731482.';
-  return currentLanguage === 'kn' ? 'ನಿಮಗೆ ಸಹಾಯ ಮಾಡಲು ನಾವು ಇಲ್ಲಿದ್ದೇವೆ. ಗಂಟೆಗಳು, ಸ್ಥಳ ಅಥವಾ ಅಪಾಯಿಂಟ್‌ಮೆಂಟ್ ಕುರಿತು ಕೇಳಿ.' : 'I’m here to help. Ask about clinic hours, location, or booking an appointment.';
+  return currentLanguage === 'kn' ? `ವಿಸ್ತೃತ ಉತ್ತರವನ್ನು ಈಗ ನೀಡಲು ಸಾಧ್ಯವಾಗುತ್ತಿಲ್ಲ. ಗಂಟೆಗಳು, ಸ್ಥಳ ಅಥವಾ ಆರೈಕೆ ಆಯ್ಕೆಗಳನ್ನು ಕೇಳಿ, ಅಥವಾ ${clinic.phone || '+91 9481731482'} ಗೆ ಕರೆ ಮಾಡಿ.` : `I can’t provide a detailed answer right now. Ask about clinic hours, location, or care options, or call ${clinic.phone || '+91 9481731482'}.`;
 }
 
 function setAssistantMode(mode) {
   const label = $('#voice-mode');
   if (!label) return;
   const messages = currentLanguage === 'kn'
-    ? { checking: 'ಜೆಮಿನಿ ಸಂಪರ್ಕ ಪರಿಶೀಲಿಸಲಾಗುತ್ತಿದೆ…', online: 'ಜೆಮಿನಿ ಸಂಪರ್ಕಗೊಂಡಿದೆ.', offline: 'ಜೆಮಿನಿ ಇನ್ನೂ ಸಂಪರ್ಕಗೊಂಡಿಲ್ಲ — ಕ್ಲಿನಿಕ್ ಮಾಹಿತಿಯನ್ನು ತೋರಿಸಲಾಗುತ್ತಿದೆ.' }
-    : { checking: 'Checking Gemini connection…', online: 'Gemini is connected.', offline: 'Gemini is not connected yet — showing clinic information instead.' };
+    ? { checking: 'ಕ್ಲಿನಿಕ್ ಸಹಾಯಕನನ್ನು ಸಂಪರ್ಕಿಸಲಾಗುತ್ತಿದೆ…', online: 'ಕ್ಲಿನಿಕ್ ಸಹಾಯಕ ಉತ್ತರಿಸಲು ಸಿದ್ಧವಾಗಿದೆ.', offline: 'AI ಉತ್ತರಗಳು ತಾತ್ಕಾಲಿಕವಾಗಿ ಲಭ್ಯವಿಲ್ಲ — ಮೂಲ ಕ್ಲಿನಿಕ್ ಮಾಹಿತಿ ಲಭ್ಯವಿದೆ.' }
+    : { checking: 'Connecting to the clinic assistant…', online: 'The clinic assistant is ready.', offline: 'AI answers are temporarily unavailable; basic clinic information is still available.' };
   label.textContent = messages[mode] || messages.offline;
   label.dataset.state = mode;
 }

@@ -2,14 +2,10 @@ import { createServer } from 'node:http';
 import { readFile, stat } from 'node:fs/promises';
 import { resolve, extname, sep } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { createAssistantResponse } from './functions/_lib/assistant.js';
 
 const root = resolve(fileURLToPath(new URL('.', import.meta.url)));
 const port = Number(process.env.PORT || 3000);
-const clinicKnowledge = JSON.parse(await readFile(resolve(root, 'clinic-knowledge.json'), 'utf8'));
-const clinicContext = `You are the Bhoomika Dental Clinic voice assistant. Use the verified clinic knowledge below as your source of truth. Give general guidance only and never diagnose. For severe pain, facial swelling, uncontrolled bleeding, airway difficulty, or a knocked-out tooth, recommend urgent contact with the clinic. Answer in the requested language when possible, keep responses concise and helpful, and direct appointment requests to the website booking form or clinic phone.
-
-Verified clinic knowledge:
-${JSON.stringify(clinicKnowledge, null, 2)}`;
 const types = {
   '.html': 'text/html; charset=utf-8', '.css': 'text/css; charset=utf-8', '.js': 'text/javascript; charset=utf-8',
   '.json': 'application/json; charset=utf-8', '.svg': 'image/svg+xml', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg',
@@ -26,19 +22,16 @@ async function readJson(request, maxBytes = 12000) {
   return JSON.parse(body);
 }
 
-async function handleGemini(request, response) {
-  if (!process.env.GEMINI_API_KEY) { response.writeHead(503, { 'content-type': 'application/json' }); response.end(JSON.stringify({ error: 'Gemini proxy is not configured.' })); return; }
+async function handleAssistant(request, response) {
   try {
     const body = await readJson(request);
-    const prompt = String(body.prompt || '').slice(0, 4000);
-    const language = String(body.language || 'English').slice(0, 32);
-    if (!prompt) throw new Error('Prompt required.');
-    const upstream = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent?key=${process.env.GEMINI_API_KEY}`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ system_instruction: { parts: [{ text: clinicContext }] }, contents: [{ role: 'user', parts: [{ text: `Respond in ${language}. User says: ${prompt}` }] }], generationConfig: { temperature: 0.3, maxOutputTokens: 240 } }) });
-    const data = await upstream.json();
-    if (!upstream.ok) throw new Error('Gemini request failed.');
-    const text = data?.candidates?.[0]?.content?.parts?.map((part) => part.text || '').join(' ').trim();
-    response.writeHead(200, { 'content-type': 'application/json', 'cache-control': 'no-store' }); response.end(JSON.stringify({ text: text || 'Please call the clinic so our team can guide you.' }));
-  } catch (error) { response.writeHead(400, { 'content-type': 'application/json', 'cache-control': 'no-store' }); response.end(JSON.stringify({ error: error.message })); }
+    const result = await createAssistantResponse({ body, apiKey: process.env.GEMINI_API_KEY });
+    response.writeHead(result.status, { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' });
+    response.end(JSON.stringify(result.body));
+  } catch {
+    response.writeHead(400, { 'content-type': 'application/json; charset=utf-8', 'cache-control': 'no-store' });
+    response.end(JSON.stringify({ error: 'Invalid request. Please try again.' }));
+  }
 }
 
 async function handleCallback(request, response) {
@@ -64,7 +57,7 @@ async function handleCallback(request, response) {
 const server = createServer(async (request, response) => {
   const url = new URL(request.url, `http://${request.headers.host || 'localhost'}`);
   if (url.pathname === '/_app/health') { response.writeHead(200, { 'content-type': 'text/plain' }); response.end('ok'); return; }
-  if (url.pathname === '/api/gemini' && request.method === 'POST') { await handleGemini(request, response); return; }
+  if (url.pathname === '/api/gemini' && request.method === 'POST') { await handleAssistant(request, response); return; }
   if (url.pathname === '/api/callback' && request.method === 'POST') { await handleCallback(request, response); return; }
   if (request.method !== 'GET' && request.method !== 'HEAD') { response.writeHead(405); response.end('Method Not Allowed'); return; }
   const redirects = {

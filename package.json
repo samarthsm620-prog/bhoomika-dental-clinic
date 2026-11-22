@@ -3,7 +3,7 @@
   "private": true,
   "version": "1.0.0",
   "scripts": {
-    "test": "node tests/workflow.test.mjs && node tests/stripe-webhook.test.mjs",
-    "check": "node --check app.js && node --check server.mjs && node --check functions/api/gemini.js && node --check --input-type=module < functions/api/appointment.js && node --check --input-type=module < functions/api/callback.js && node --check --input-type=module < functions/api/review.js && node --check --input-type=module < functions/api/paid.js && node --check < google-sheets/Code.gs"
+    "test": "node tests/workflow.test.mjs && node tests/stripe-webhook.test.mjs && node tests/assistant.test.mjs",
+    "check": "node --check app.js && node --check server.mjs && node --check functions/_lib/assistant.js && node --check functions/api/gemini.js && node --check --input-type=module < functions/api/appointment.js && node --check --input-type=module < functions/api/callback.js && node --check --input-type=module < functions/api/review.js && node --check --input-type=module < functions/api/paid.js && node --check < google-sheets/Code.gs"
   }
 }
